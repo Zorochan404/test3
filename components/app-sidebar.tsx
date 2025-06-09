@@ -143,6 +143,23 @@ const data = {
       icon: IconFileWord,
     },
   ],
+  webDataItems: [
+    {
+      title: "Blog",
+      url: "/dashboard/webdata/blog",
+      icon: IconArticle,
+    },
+    {
+      title: "Downloads",
+      url: "/dashboard/webdata/download",
+      icon: IconDownload,
+    },
+    {
+      title: "Contact",
+      url: "/dashboard/webdata/contact", 
+      icon: IconMail,
+    }
+  ],
 }
 
 
@@ -175,4 +192,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   )
 }
+
 
