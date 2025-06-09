@@ -2,9 +2,11 @@
 
 import * as React from "react"
 import {
+  IconArticle,
   IconCamera,
   IconDashboard,
   IconDatabase,
+  IconDownload,
   IconFileAi,
   IconFileDescription,
   IconFileWord,
@@ -12,6 +14,7 @@ import {
   IconHelp,
   IconInnerShadowTop,
   IconListDetails,
+  IconMail,
   IconReport,
   IconSearch,
   IconSettings,
