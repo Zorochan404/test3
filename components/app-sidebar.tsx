@@ -19,6 +19,7 @@ import {
   IconSearch,
   IconSettings,
   IconUsers,
+  IconSchool,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -46,6 +47,11 @@ const data = {
       title: "Dashboard",
       url: "/dashboard",
       icon: IconDashboard,
+    },
+    {
+      title: "Courses",
+      url: "/dashboard/courses",
+      icon: IconSchool,
     },
     {
       title: "Web-Data",

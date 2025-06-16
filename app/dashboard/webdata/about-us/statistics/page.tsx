@@ -285,7 +285,9 @@ export default function StatisticsEditPage() {
                     </Button>
                   </div>
                   <Input
-                    ref={(el) => fileInputRefs.current['main'] = el}
+                    ref={(el) => {
+                      fileInputRefs.current['main'] = el
+                    }}
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}

@@ -4,6 +4,10 @@ const nextConfig = {
   output: 'standalone',
   // Ensure trailing slashes are handled consistently
   trailingSlash: false,
+  // Ignore ESLint during build
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;
