@@ -8,10 +8,11 @@ import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 // import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
-import { 
-  getBlogPosts, 
-  deleteBlogPost, 
-  type BlogPost 
+import {
+  getBlogPosts,
+  deleteBlogPost,
+  updateBlogPostStatus,
+  type BlogPost
 } from './apis'
 
 export default function BlogPage() {
@@ -19,6 +20,7 @@ export default function BlogPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedStatus, setSelectedStatus] = useState('all')
 
   useEffect(() => {
     loadBlogPosts()
@@ -57,14 +59,48 @@ export default function BlogPage() {
     }
   }
 
+  const handleStatusUpdate = async (id: string, status: 'draft' | 'published' | 'archived') => {
+    if (!id) {
+      toast.error('Invalid blog post ID')
+      return
+    }
+
+    try {
+      await updateBlogPostStatus(id, status)
+      const statusMessage = status === 'published' ? 'published' :
+                           status === 'draft' ? 'moved to draft' : 'archived'
+      toast.success(`Blog post ${statusMessage} successfully`)
+      loadBlogPosts()
+    } catch (error: unknown) {
+      console.error('Error updating blog post status:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to update blog post status')
+    }
+  }
+
   const filteredPosts = blogPosts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          post.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = selectedCategory === 'all' || post.category.toLowerCase() === selectedCategory.toLowerCase()
-    return matchesSearch && matchesCategory
+
+    // Improved status matching with fallback logic
+    let postStatus = post.status;
+    if (!postStatus) {
+      // Fallback logic if status is not set
+      if (post.isDraft) {
+        postStatus = 'draft';
+      } else if (post.isPublished) {
+        postStatus = 'published';
+      } else {
+        postStatus = 'draft'; // Default to draft
+      }
+    }
+
+    const matchesStatus = selectedStatus === 'all' || postStatus === selectedStatus
+    return matchesSearch && matchesCategory && matchesStatus
   })
 
   const categories = ['all', ...Array.from(new Set(blogPosts.map(post => post.category.toLowerCase())))]
+  const statuses = ['all', 'draft', 'published', 'archived']
 
   if (loading) {
     return (
@@ -121,6 +157,19 @@ export default function BlogPage() {
               ))}
             </select>
           </div>
+          <div className="w-full sm:w-48">
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+            >
+              {statuses.map(status => (
+                <option key={status} value={status}>
+                  {status === 'all' ? 'All Status' : status.charAt(0).toUpperCase() + status.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -140,8 +189,21 @@ export default function BlogPage() {
                   target.src = '/placeholder-image.svg';
                 }}
               />
-              <div className="absolute top-2 left-2">
+              <div className="absolute top-2 left-2 flex gap-2">
                 <Badge variant="secondary">{post.category}</Badge>
+                <Badge
+                  variant={
+                    (() => {
+                      const status = post.status || (post.isDraft ? 'draft' : (post.isPublished ? 'published' : 'draft'));
+                      return status === 'published' ? 'default' : status === 'draft' ? 'outline' : 'destructive';
+                    })()
+                  }
+                >
+                  {(() => {
+                    const status = post.status || (post.isDraft ? 'draft' : (post.isPublished ? 'published' : 'draft'));
+                    return status.charAt(0).toUpperCase() + status.slice(1);
+                  })()}
+                </Badge>
               </div>
             </div>
             <CardHeader>
@@ -153,28 +215,60 @@ export default function BlogPage() {
                 <span>{post.date}</span>
                 <span>{post.readTime}</span>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" asChild className="flex-1">
-                  <Link href={`/dashboard/webdata/blog/${post.slug || post.id || post._id || 'unknown'}`}>
-                    View
-                  </Link>
-                </Button>
-                <Button variant="outline" size="sm" asChild className="flex-1">
-                  <Link href={`/dashboard/webdata/blog/edit/${post.id || post._id || 'unknown'}`}>
-                    Edit
-                  </Link>
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    const postId = post.id || post._id;
-                    if (postId) handleDelete(postId);
-                  }}
-                  className="flex-1"
-                >
-                  Delete
-                </Button>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" asChild className="flex-1">
+                    <Link href={`/dashboard/webdata/blog/${post.slug || post.id || post._id || 'unknown'}`}>
+                      View
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild className="flex-1">
+                    <Link href={`/dashboard/webdata/blog/edit/${post.id || post._id || 'unknown'}`}>
+                      Edit
+                    </Link>
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  {(() => {
+                    const status = post.status || (post.isDraft ? 'draft' : (post.isPublished ? 'published' : 'draft'));
+                    return status === 'published' ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          const postId = post.id || post._id;
+                          if (postId) handleStatusUpdate(postId, 'draft');
+                        }}
+                        className="flex-1"
+                      >
+                        Unpublish
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => {
+                          const postId = post.id || post._id;
+                          if (postId) handleStatusUpdate(postId, 'published');
+                        }}
+                        className="flex-1"
+                      >
+                        Publish
+                      </Button>
+                    );
+                  })()}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      const postId = post.id || post._id;
+                      if (postId) handleDelete(postId);
+                    }}
+                    className="flex-1"
+                  >
+                    Delete
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

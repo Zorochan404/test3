@@ -42,7 +42,15 @@ export default function EditBlogPage() {
       image: ''
     },
     sections: [],
-    relatedPosts: []
+    relatedPosts: [],
+    status: 'draft',
+    isPublished: false,
+    isDraft: true,
+    publishedAt: undefined,
+    metaTitle: '',
+    metaDescription: '',
+    metaKeywords: '',
+    canonicalUrl: ''
   })
 
   const loadBlogPost = useCallback(async () => {
@@ -62,7 +70,15 @@ export default function EditBlogPage() {
           readTime: post.readTime,
           author: post.author,
           sections: post.sections,
-          relatedPosts: post.relatedPosts
+          relatedPosts: post.relatedPosts,
+          status: post.status || 'draft',
+          isPublished: post.isPublished || false,
+          isDraft: post.isDraft !== undefined ? post.isDraft : true,
+          publishedAt: post.publishedAt,
+          metaTitle: post.metaTitle || '',
+          metaDescription: post.metaDescription || '',
+          metaKeywords: post.metaKeywords || '',
+          canonicalUrl: post.canonicalUrl || ''
         })
       } else {
         toast.error('Blog post not found')
@@ -218,45 +234,43 @@ export default function EditBlogPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const validateForm = () => {
     // Validate title
     if (!formData.title.trim()) {
       toast.error('Title is required')
-      return
+      return false
     }
 
     if (formData.title.trim().length < 10) {
       toast.error('Title must be at least 10 characters long')
-      return
+      return false
     }
 
     // Validate excerpt
     if (!formData.excerpt.trim()) {
       toast.error('Excerpt is required')
-      return
+      return false
     }
 
     if (formData.excerpt.trim().length < 10) {
       toast.error('Excerpt must be at least 10 characters long')
-      return
+      return false
     }
 
     if (!formData.heroImage.trim()) {
       toast.error('Hero image is required')
-      return
+      return false
     }
 
     if (!formData.category.trim()) {
       toast.error('Category is required')
-      return
+      return false
     }
 
     // Validate sections
     if (formData.sections.length === 0) {
       toast.error('At least one content section is required')
-      return
+      return false
     }
 
     for (let i = 0; i < formData.sections.length; i++) {
@@ -264,24 +278,47 @@ export default function EditBlogPage() {
 
       if (!section.title.trim()) {
         toast.error(`Section ${i + 1} title is required`)
-        return
+        return false
       }
 
       if (!section.content.trim()) {
         toast.error(`Section ${i + 1} content is required`)
-        return
+        return false
       }
 
       if (section.content.trim().length < 10) {
         toast.error(`Section ${i + 1} content must be at least 10 characters long`)
-        return
+        return false
       }
+    }
+
+    return true
+  }
+
+  const handleSubmit = async (e: React.FormEvent, status?: 'draft' | 'published') => {
+    e.preventDefault()
+
+    if (!validateForm()) {
+      return
     }
 
     try {
       setLoading(true)
-      await updateBlogPost(id, formData)
-      toast.success('Blog post updated successfully!')
+
+      // Update status if provided
+      const submitData = status ? {
+        ...formData,
+        status,
+        isPublished: status === 'published',
+        isDraft: status === 'draft',
+        publishedAt: status === 'published' && !formData.publishedAt ? new Date().toISOString() : formData.publishedAt
+      } : formData
+
+      await updateBlogPost(id, submitData)
+
+      const statusMessage = status === 'draft' ? 'saved as draft' :
+                           status === 'published' ? 'published' : 'updated'
+      toast.success(`Blog post ${statusMessage} successfully!`)
       router.push('/dashboard/webdata/blog')
     } catch (error: unknown) {
       console.error('Error updating blog post:', error)
@@ -531,6 +568,112 @@ export default function EditBlogPage() {
           </CardContent>
         </Card>
 
+        {/* SEO & Metadata */}
+        <Card>
+          <CardHeader>
+            <CardTitle>SEO & Metadata</CardTitle>
+            <CardDescription>Optimize your blog post for search engines</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="metaTitle">Meta Title (Optional)</Label>
+              <Input
+                id="metaTitle"
+                value={formData.metaTitle || ''}
+                onChange={(e) => handleInputChange('metaTitle', e.target.value)}
+                placeholder="SEO title (if different from main title)"
+                maxLength={60}
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                {(formData.metaTitle || '').length}/60 characters - Recommended: 50-60 characters
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="metaDescription">Meta Description (Optional)</Label>
+              <Textarea
+                id="metaDescription"
+                value={formData.metaDescription || ''}
+                onChange={(e) => handleInputChange('metaDescription', e.target.value)}
+                placeholder="Brief description for search engines (if different from excerpt)"
+                rows={3}
+                maxLength={160}
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                {(formData.metaDescription || '').length}/160 characters - Recommended: 150-160 characters
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="metaKeywords">Meta Keywords (Optional)</Label>
+              <Input
+                id="metaKeywords"
+                value={formData.metaKeywords || ''}
+                onChange={(e) => handleInputChange('metaKeywords', e.target.value)}
+                placeholder="keyword1, keyword2, keyword3"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Separate keywords with commas. Example: education, design school, career
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="canonicalUrl">Canonical URL (Optional)</Label>
+              <Input
+                id="canonicalUrl"
+                value={formData.canonicalUrl || ''}
+                onChange={(e) => handleInputChange('canonicalUrl', e.target.value)}
+                placeholder="https://www.inframeschool.com/blog/your-post-slug"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                The canonical URL for this post (helps prevent duplicate content issues)
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Publishing Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Publishing Status</CardTitle>
+            <CardDescription>Update the publishing status of this blog post</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <select
+                id="status"
+                value={formData.status}
+                onChange={(e) => handleInputChange('status', e.target.value as 'draft' | 'published' | 'archived')}
+                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+              >
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </select>
+              <p className="text-sm text-gray-500 mt-1">
+                {formData.status === 'draft' && 'Save as draft - not visible to public'}
+                {formData.status === 'published' && 'Published - visible to public'}
+                {formData.status === 'archived' && 'Archived - not visible to public'}
+              </p>
+            </div>
+            {formData.publishedAt && (
+              <div>
+                <Label>Published Date</Label>
+                <p className="text-sm text-gray-600 mt-1">
+                  {new Date(formData.publishedAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Content Sections */}
         <Card>
           <CardHeader>
@@ -674,15 +817,27 @@ export default function EditBlogPage() {
           </CardContent>
         </Card>
 
-        {/* Submit Button */}
+        {/* Submit Buttons */}
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" asChild>
             <Link href="/dashboard/webdata/blog">
               Cancel
             </Link>
           </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Updating...' : 'Update Blog Post'}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={(e) => handleSubmit(e, 'draft')}
+            disabled={loading}
+          >
+            {loading ? 'Saving...' : 'Save as Draft'}
+          </Button>
+          <Button
+            type="button"
+            onClick={(e) => handleSubmit(e, 'published')}
+            disabled={loading}
+          >
+            {loading ? 'Publishing...' : 'Publish Now'}
           </Button>
         </div>
       </form>

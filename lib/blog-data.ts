@@ -142,6 +142,10 @@ export interface BlogPostData {
   author: BlogAuthor;
   sections: BlogSection[];
   relatedPosts: RelatedPost[];
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
+  canonicalUrl?: string;
 }
 
 export interface BlogPost extends BlogPostData {

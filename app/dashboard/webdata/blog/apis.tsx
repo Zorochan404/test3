@@ -33,6 +33,14 @@ export interface BlogPostData {
   author: BlogAuthor;
   sections: BlogSection[];
   relatedPosts: RelatedPost[];
+  status: 'draft' | 'published' | 'archived';
+  isPublished: boolean;
+  isDraft: boolean;
+  publishedAt?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
+  canonicalUrl?: string;
 }
 
 export interface BlogPost extends BlogPostData {
@@ -48,14 +56,22 @@ export interface BlogPost extends BlogPostData {
 // API Functions
 export async function getBlogPosts(): Promise<BlogPost[]> {
   try {
-    const response = await fetch('https://backend-rakj.onrender.com/api/v1/blog/getblogs');
+    const response = await fetch('https://backend-rakj.onrender.com/api/v1/blog/getallblogs');
 
     if (!response.ok) {
       throw new Error('Failed to fetch blog posts');
     }
 
     const result = await response.json();
-    return result.data || [];
+    const blogs = result.data || [];
+
+    // Ensure each blog has proper status field
+    return blogs.map((blog: any) => ({
+      ...blog,
+      status: blog.status || (blog.isDraft ? 'draft' : (blog.isPublished ? 'published' : 'draft')),
+      id: blog._id || blog.id,
+      _id: blog._id
+    }));
   } catch (error) {
     console.error('Error fetching blog posts:', error);
     throw error;
@@ -234,6 +250,105 @@ export async function deleteBlogPost(id: string): Promise<void> {
     }
   } catch (error) {
     console.error('Error deleting blog post:', error);
+    throw error;
+  }
+}
+
+export async function updateBlogPostStatus(id: string, status: 'draft' | 'published' | 'archived'): Promise<BlogPost> {
+  try {
+    let endpoint = '';
+    let method = 'PUT';
+    let body = {};
+
+    // Use the specific endpoints based on status
+    switch (status) {
+      case 'published':
+        endpoint = `https://backend-rakj.onrender.com/api/v1/blog/publishblog/${id}`;
+        body = {
+          isPublished: true,
+          isDraft: false,
+          status: 'published',
+          publishedAt: new Date().toISOString()
+        };
+        break;
+      case 'draft':
+        endpoint = `https://backend-rakj.onrender.com/api/v1/blog/saveblogasdraft/${id}`;
+        body = {
+          isPublished: false,
+          isDraft: true,
+          status: 'draft'
+        };
+        break;
+      case 'archived':
+        endpoint = `https://backend-rakj.onrender.com/api/v1/blog/archiveblog/${id}`;
+        body = {
+          isPublished: false,
+          isDraft: false,
+          status: 'archived'
+        };
+        break;
+      default:
+        throw new Error('Invalid status');
+    }
+
+    const response = await fetch(endpoint, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to update blog post status');
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error('Error updating blog post status:', error);
+    throw error;
+  }
+}
+
+// Additional API functions to match backend endpoints
+export async function getPublishedBlogs(): Promise<BlogPost[]> {
+  try {
+    const response = await fetch('https://backend-rakj.onrender.com/api/v1/blog/getpublishedblogs');
+    if (!response.ok) {
+      throw new Error('Failed to fetch published blogs');
+    }
+    const result = await response.json();
+    return result.data || [];
+  } catch (error) {
+    console.error('Error fetching published blogs:', error);
+    throw error;
+  }
+}
+
+export async function getDraftBlogs(): Promise<BlogPost[]> {
+  try {
+    const response = await fetch('https://backend-rakj.onrender.com/api/v1/blog/getdraftblogs');
+    if (!response.ok) {
+      throw new Error('Failed to fetch draft blogs');
+    }
+    const result = await response.json();
+    return result.data || [];
+  } catch (error) {
+    console.error('Error fetching draft blogs:', error);
+    throw error;
+  }
+}
+
+export async function getBlogsByStatus(status: string): Promise<BlogPost[]> {
+  try {
+    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/blog/getblogsbystatus/${status}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch blogs with status: ${status}`);
+    }
+    const result = await response.json();
+    return result.data || [];
+  } catch (error) {
+    console.error(`Error fetching blogs by status ${status}:`, error);
     throw error;
   }
 }
