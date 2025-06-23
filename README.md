@@ -1,24 +1,69 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# Admin Dashboard
 
-First, run the development server:
+A comprehensive admin dashboard for managing admissions, courses, and web content.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Environment Variables
+
+This project uses environment variables for API configuration. Create a `.env.local` file in the root directory with the following variables:
+
+```env
+# API Configuration
+NEXT_PUBLIC_API_BASE_URL=https://backend-rakj.onrender.com/api/v1
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment Files
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `.env.local` - Local development environment (not committed to git)
+- `.env.example` - Example environment file (committed to git)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### API Configuration
+
+The project uses a centralized API configuration system:
+
+- **Base URL**: Configured via `NEXT_PUBLIC_API_BASE_URL` environment variable
+- **Utility Functions**: Located in `lib/api-config.ts`
+  - `buildApiUrl(endpoint)` - Builds complete API URLs
+  - `getApiHeaders()` - Returns common headers for API requests
+
+### Switching Environments
+
+To switch between different API environments:
+
+1. **Development**: Use `.env.local` with your development API URL
+2. **Production**: Set environment variables in your hosting platform
+3. **Staging**: Create `.env.staging` for staging environment
+
+## Features
+
+- **Admissions Management**: View and manage student applications
+- **Course Management**: Manage courses and programs
+- **Content Management**: Manage testimonials, blogs, and other web content
+- **User Management**: Admin user interface
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies: `npm install` or `pnpm install`
+3. Copy `.env.example` to `.env.local` and configure your API URL
+4. Run the development server: `npm run dev` or `pnpm dev`
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## API Integration
+
+The dashboard is designed to work with a backend API. Currently using mock data for admissions, but ready for real API integration by updating the API functions in:
+
+- `app/dashboard/admissions/apis.tsx`
+- `app/dashboard/webdata/testimonials/apis.tsx`
+- `constants/apis.ts`
+
+## Tech Stack
+
+- **Framework**: Next.js 14 with App Router
+- **UI**: Tailwind CSS with shadcn/ui components
+- **Language**: TypeScript
+- **Package Manager**: pnpm
 
 ## Learn More
 

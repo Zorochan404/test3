@@ -21,78 +21,28 @@ export default function CourseProgramDetailsPage() {
   const loadPrograms = async () => {
     try {
       setLoading(true)
+      console.log('Fetching course programs from API...')
       const data = await getCoursePrograms()
+      console.log('API Response data:', data)
+      console.log('Number of programs found:', data.length)
       
-      // Mock data for demonstration - replace with actual API call
-      const mockPrograms: CourseProgram[] = [
-        {
-          _id: '1',
-          slug: 'bdes-in-interior-design',
-          title: 'Bachelor of Design in Interior Design',
-          parentCourseSlug: 'interior-design',
-          parentCourseTitle: 'Interior Design',
-          heroImage: 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=1600&q=80',
-          duration: '4 Years Full-Time',
-          description: 'Transform spaces and shape experiences through our comprehensive design program. Learn from industry experts and build a successful career in interior design.',
-          shortDescription: 'Comprehensive 4-year program in interior design',
-          courseOverview: 'The Bachelor of Design (B.Des) in Interior Design is a four-year full-time program designed to provide students with an in-depth understanding of interior spaces, aesthetics, and functionality.',
-          imageUrl: 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=800&q=80',
-          detailsUrl: '/interior-design/bdes-in-interior-design',
-          order: 1,
-          admissionSteps: [],
-          galleryImages: [],
-          programHighlights: [],
-          careerPaths: [],
-          curriculum: [],
-          softwareTools: [],
-          industryPartners: [],
-          testimonials: [],
-          faqs: [],
-          feeBenefits: [],
-          eligibility: [],
-          scheduleOptions: [],
-          ctaTitle: 'Step into the World of Interior Design',
-          ctaDescription: 'Apply now and start your journey',
-          ctaButtonText: 'Apply Now',
-          isActive: true
-        },
-        {
-          _id: '2',
-          slug: 'bvoc-in-interior-design',
-          title: 'B.VOC in Interior Design',
-          parentCourseSlug: 'interior-design',
-          parentCourseTitle: 'Interior Design',
-          heroImage: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1600&q=80',
-          duration: '3 Years Full-Time',
-          description: 'Combine practical skills with theoretical knowledge in our vocational program.',
-          shortDescription: 'Practical 3-year vocational program',
-          courseOverview: 'The B.VOC in Interior Design is a three-year vocational program focusing on practical skills and industry readiness.',
-          imageUrl: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&q=80',
-          detailsUrl: '/interior-design/bvoc-in-interior-design',
-          order: 2,
-          admissionSteps: [],
-          galleryImages: [],
-          programHighlights: [],
-          careerPaths: [],
-          curriculum: [],
-          softwareTools: [],
-          industryPartners: [],
-          testimonials: [],
-          faqs: [],
-          feeBenefits: [],
-          eligibility: [],
-          scheduleOptions: [],
-          ctaTitle: 'Start Your Vocational Journey',
-          ctaDescription: 'Join our practical program',
-          ctaButtonText: 'Apply Now',
-          isActive: true
+      if (data && Array.isArray(data)) {
+        setPrograms(data)
+        if (data.length === 0) {
+          toast.info('No course program details found. Create your first program details page.')
+        } else {
+          toast.success(`Loaded ${data.length} course program details`)
+          console.log('Programs loaded:', data.map(p => ({ id: p._id, title: p.title, course: p.parentCourseTitle })))
         }
-      ]
-      
-      setPrograms(mockPrograms)
+      } else {
+        console.warn('API returned unexpected data format:', data)
+        setPrograms([])
+        toast.warning('No program details available - API returned unexpected format')
+      }
     } catch (error) {
       console.error('Error loading programs:', error)
-      toast.error('Failed to load course program details')
+      toast.error(`Failed to load course program details: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setPrograms([])
     } finally {
       setLoading(false)
     }
@@ -104,8 +54,6 @@ export default function CourseProgramDetailsPage() {
     }
 
     try {
-      // For now, we'll use a placeholder courseId since we don't have the actual courseId
-      // In a real implementation, you'd need to get the courseId from the program data
       const program = programs.find(p => p._id === id)
       if (!program) {
         throw new Error('Program not found')
@@ -131,28 +79,41 @@ export default function CourseProgramDetailsPage() {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center h-64">
-          <div className="text-lg">Loading course program details...</div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="text-lg">Loading course program details...</div>
+            <div className="text-sm text-gray-500 mt-2">Fetching data from API</div>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-6">
-      <div className='flex justify-between items-center mb-6'>
-        <div>
-          <h1 className='text-3xl font-bold'>Course Program Details Management</h1>
-          <p className='text-gray-600 mt-2'>
-            Manage detailed program pages like <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">/interior-design/bdes-in-interior-design</span>
+    <div className="p-4 sm:p-6">
+      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6'>
+        <div className="flex-1 min-w-0">
+          <h1 className='text-2xl sm:text-3xl font-bold break-words'>Course Program Details Management</h1>
+          <p className='text-gray-600 mt-2 text-sm sm:text-base'>
+            Manage detailed program pages like <span className="font-mono text-xs sm:text-sm bg-gray-100 px-2 py-1 rounded">/interior-design/bdes-in-interior-design</span>
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <Button variant="outline" asChild size="sm" className="flex-1 sm:flex-none">
             <Link href="/dashboard/courses/programs">
               Back to Programs
             </Link>
           </Button>
-          <Button asChild>
+          <Button 
+            variant="outline" 
+            onClick={loadPrograms}
+            disabled={loading}
+            size="sm"
+            className="flex-1 sm:flex-none"
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </Button>
+          <Button asChild size="sm" className="flex-1 sm:flex-none">
             <Link href="/dashboard/courses/program-details/add">
               Add Program Details
             </Link>
@@ -171,27 +132,27 @@ export default function CourseProgramDetailsPage() {
               placeholder="Search program details by title, slug, or course..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-md"
+              className="max-w-md w-full"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Program Details Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {filteredPrograms.map((program) => (
-          <Card key={program._id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="relative">
-              <div className="absolute top-2 right-2">
-                <Badge variant={program.isActive ? 'default' : 'secondary'}>
+          <Card key={program._id} className="hover:shadow-lg transition-shadow flex flex-col h-full overflow-hidden">
+            <CardHeader className="relative flex-shrink-0">
+              <div className="absolute top-2 right-2 z-10">
+                <Badge variant={program.isActive ? 'default' : 'secondary'} className="text-xs">
                   {program.isActive ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
               <div className="aspect-video w-full mb-4 rounded-lg overflow-hidden bg-gray-100">
-                {program.heroImage ? (
+                {program.heroImage || program.imageUrl ? (
                   <img
-                    src={program.heroImage}
-                    alt={program.title}
+                    src={program.heroImage || program.imageUrl}
+                    alt={program.title || 'Program Image'}
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -204,41 +165,41 @@ export default function CourseProgramDetailsPage() {
                   </div>
                 )}
               </div>
-              <CardTitle className="text-lg">{program.title}</CardTitle>
-              <CardDescription className="text-sm">
-                <span className="text-blue-600">{program.parentCourseTitle}</span> • {program.duration}
+              <CardTitle className="text-base sm:text-lg break-words line-clamp-2">{program.title || 'Untitled Program'}</CardTitle>
+              <CardDescription className="text-xs sm:text-sm break-words">
+                <span className="text-blue-600">{program.parentCourseTitle || 'Unknown Course'}</span> • {program.duration || 'Duration not set'}
               </CardDescription>
-              <CardDescription className="text-xs text-gray-500 font-mono">
-                /{program.parentCourseSlug}/{program.slug}
+              <CardDescription className="text-xs text-gray-500 font-mono break-all">
+                /{program.parentCourseSlug || 'unknown'}/{program.slug || 'unknown'}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                {program.shortDescription || program.description}
+            <CardContent className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <p className="text-xs sm:text-sm text-gray-600 mb-4 line-clamp-3 flex-shrink-0">
+                {program.shortDescription || program.description || 'No description available'}
               </p>
               
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-sm">
+              <div className="space-y-1 sm:space-y-2 mb-4 flex-shrink-0">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-500">Curriculum:</span>
                   <span className="font-medium text-xs">{program.curriculum?.length || 0} years</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-500">Software:</span>
                   <span className="font-medium text-xs">{program.softwareTools?.length || 0} tools</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-500">Career Paths:</span>
                   <span className="font-medium text-xs">{program.careerPaths?.length || 0} paths</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-500">FAQs:</span>
                   <span className="font-medium text-xs">{program.faqs?.length || 0} questions</span>
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" asChild className="flex-1">
-                  <Link href={`/dashboard/courses/program-details/edit/${program._id}`}>
+              <div className="flex flex-col sm:flex-row gap-2 mt-auto w-full overflow-hidden">
+                <Button size="sm" variant="outline" asChild className="flex-1 min-w-0 text-xs overflow-hidden">
+                  <Link href={`/dashboard/courses/program-details/edit/${program._id}`} className="truncate">
                     Edit Details
                   </Link>
                 </Button>
@@ -246,11 +207,13 @@ export default function CourseProgramDetailsPage() {
                   size="sm" 
                   variant="outline" 
                   asChild
+                  className="flex-1 min-w-0 text-xs overflow-hidden"
                 >
                   <a 
-                    href={`https://www.inframeschool.com/${program.parentCourseSlug}/${program.slug}`} 
+                    href={`https://www.inframeschool.com/${program.parentCourseSlug || 'unknown'}/${program.slug || 'unknown'}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
+                    className="truncate"
                   >
                     View Live
                   </a>
@@ -259,7 +222,8 @@ export default function CourseProgramDetailsPage() {
                   <Button
                     size="sm"
                     variant="destructive"
-                    onClick={() => handleDelete(program._id!, program.title)}
+                    onClick={() => handleDelete(program._id!, program.title || 'Untitled Program')}
+                    className="flex-1 sm:flex-none min-w-0 text-xs overflow-hidden"
                   >
                     Delete
                   </Button>

@@ -22,10 +22,9 @@ import {
   type CurriculumYear,
   type SoftwareTool,
   type CareerPath,
-  type IndustryPartner,
-  type ProgramHighlight,
-  type CourseGalleryImage
+  type ProgramHighlight
 } from '../../apis'
+import { Badge } from '@/components/ui/badge'
 
 // Mock course data - replace with actual API call
 const availableCourses = [
@@ -99,14 +98,6 @@ export default function EditCourseProgramDetailsPage() {
   })
   const [editingCareerId, setEditingCareerId] = useState<string | null>(null)
 
-  const [partnerForm, setPartnerForm] = useState({
-    name: '',
-    logoUrl: '',
-    description: '',
-    order: 1
-  })
-  const [editingPartnerId, setEditingPartnerId] = useState<string | null>(null)
-
   const [highlightForm, setHighlightForm] = useState({
     icon: '',
     title: '',
@@ -114,13 +105,6 @@ export default function EditCourseProgramDetailsPage() {
     order: 1
   })
   const [editingHighlightId, setEditingHighlightId] = useState<string | null>(null)
-
-  const [galleryForm, setGalleryForm] = useState({
-    imageUrl: '',
-    caption: '',
-    order: 1
-  })
-  const [editingGalleryId, setEditingGalleryId] = useState<string | null>(null)
 
   useEffect(() => {
     if (programId) {
@@ -131,8 +115,12 @@ export default function EditCourseProgramDetailsPage() {
   const loadProgram = async () => {
     try {
       setLoading(true)
+      console.log('Loading program with ID:', programId)
       const programData = await getCourseProgramById(programId)
+      console.log('Program data received:', programData)
+      
       if (!programData) {
+        console.error('Program not found for ID:', programId)
         toast.error('Program details not found')
         router.push('/dashboard/courses/program-details')
         return
@@ -158,6 +146,7 @@ export default function EditCourseProgramDetailsPage() {
         metaDescription: programData.metaDescription || '',
         metaKeywords: programData.metaKeywords || ''
       })
+      console.log('Form data set successfully')
     } catch (error) {
       console.error('Error loading program:', error)
       toast.error('Failed to load program details')
@@ -231,11 +220,802 @@ export default function EditCourseProgramDetailsPage() {
     }
   }
 
+  // Admission Steps Functions
+  const handleAddAdmissionStep = async () => {
+    if (!admissionStepForm.title.trim() || !admissionStepForm.description.trim()) {
+      toast.error('Title and description are required')
+      return
+    }
+
+    try {
+      const newStep: AdmissionStep = {
+        stepNumber: admissionStepForm.stepNumber,
+        icon: admissionStepForm.icon,
+        title: admissionStepForm.title.trim(),
+        description: admissionStepForm.description.trim(),
+        order: admissionStepForm.order
+      }
+
+      const updatedSteps = [...(program?.admissionSteps || []), newStep]
+      
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        admissionSteps: updatedSteps
+      })
+
+      // Reset form
+      setAdmissionStepForm({
+        stepNumber: 1,
+        icon: '',
+        title: '',
+        description: '',
+        order: 1
+      })
+
+      toast.success('Admission step added successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error adding admission step:', error)
+      toast.error('Failed to add admission step')
+    }
+  }
+
+  const handleEditAdmissionStep = (index: number) => {
+    const step = program?.admissionSteps?.[index]
+    if (step) {
+      setAdmissionStepForm({
+        stepNumber: step.stepNumber,
+        icon: step.icon,
+        title: step.title,
+        description: step.description,
+        order: step.order
+      })
+      setEditingAdmissionStepId(index.toString())
+    }
+  }
+
+  const handleUpdateAdmissionStep = async () => {
+    if (!editingAdmissionStepId || !admissionStepForm.title.trim() || !admissionStepForm.description.trim()) {
+      toast.error('Title and description are required')
+      return
+    }
+
+    try {
+      const index = parseInt(editingAdmissionStepId)
+      const updatedSteps = [...(program?.admissionSteps || [])]
+      
+      updatedSteps[index] = {
+        stepNumber: admissionStepForm.stepNumber,
+        icon: admissionStepForm.icon,
+        title: admissionStepForm.title.trim(),
+        description: admissionStepForm.description.trim(),
+        order: admissionStepForm.order
+      }
+
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        admissionSteps: updatedSteps
+      })
+
+      // Reset form and editing state
+      setAdmissionStepForm({
+        stepNumber: 1,
+        icon: '',
+        title: '',
+        description: '',
+        order: 1
+      })
+      setEditingAdmissionStepId(null)
+
+      toast.success('Admission step updated successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error updating admission step:', error)
+      toast.error('Failed to update admission step')
+    }
+  }
+
+  const handleDeleteAdmissionStep = async (index: number) => {
+    if (!confirm('Are you sure you want to delete this admission step?')) {
+      return
+    }
+
+    try {
+      const updatedSteps = [...(program?.admissionSteps || [])]
+      updatedSteps.splice(index, 1)
+
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        admissionSteps: updatedSteps
+      })
+
+      toast.success('Admission step deleted successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error deleting admission step:', error)
+      toast.error('Failed to delete admission step')
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setAdmissionStepForm({
+      stepNumber: 1,
+      icon: '',
+      title: '',
+      description: '',
+      order: 1
+    })
+    setEditingAdmissionStepId(null)
+  }
+
+  // Program Highlights Functions
+  const handleAddHighlight = async () => {
+    if (!highlightForm.title.trim() || !highlightForm.description.trim()) {
+      toast.error('Title and description are required')
+      return
+    }
+
+    try {
+      const newHighlight: ProgramHighlight = {
+        icon: highlightForm.icon,
+        title: highlightForm.title.trim(),
+        description: highlightForm.description.trim(),
+        order: highlightForm.order
+      }
+
+      const updatedHighlights = [...(program?.programHighlights || []), newHighlight]
+      
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        programHighlights: updatedHighlights
+      })
+
+      // Reset form
+      setHighlightForm({
+        icon: '',
+        title: '',
+        description: '',
+        order: 1
+      })
+
+      toast.success('Program highlight added successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error adding program highlight:', error)
+      toast.error('Failed to add program highlight')
+    }
+  }
+
+  const handleEditHighlight = (index: number) => {
+    const highlight = program?.programHighlights?.[index]
+    if (highlight) {
+      setHighlightForm({
+        icon: highlight.icon,
+        title: highlight.title,
+        description: highlight.description,
+        order: highlight.order
+      })
+      setEditingHighlightId(index.toString())
+    }
+  }
+
+  const handleUpdateHighlight = async () => {
+    if (!editingHighlightId || !highlightForm.title.trim() || !highlightForm.description.trim()) {
+      toast.error('Title and description are required')
+      return
+    }
+
+    try {
+      const index = parseInt(editingHighlightId)
+      const updatedHighlights = [...(program?.programHighlights || [])]
+      
+      updatedHighlights[index] = {
+        icon: highlightForm.icon,
+        title: highlightForm.title.trim(),
+        description: highlightForm.description.trim(),
+        order: highlightForm.order
+      }
+
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        programHighlights: updatedHighlights
+      })
+
+      // Reset form and editing state
+      setHighlightForm({
+        icon: '',
+        title: '',
+        description: '',
+        order: 1
+      })
+      setEditingHighlightId(null)
+
+      toast.success('Program highlight updated successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error updating program highlight:', error)
+      toast.error('Failed to update program highlight')
+    }
+  }
+
+  const handleDeleteHighlight = async (index: number) => {
+    if (!confirm('Are you sure you want to delete this program highlight?')) {
+      return
+    }
+
+    try {
+      const updatedHighlights = [...(program?.programHighlights || [])]
+      updatedHighlights.splice(index, 1)
+
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        programHighlights: updatedHighlights
+      })
+
+      toast.success('Program highlight deleted successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error deleting program highlight:', error)
+      toast.error('Failed to delete program highlight')
+    }
+  }
+
+  const handleCancelHighlightEdit = () => {
+    setHighlightForm({
+      icon: '',
+      title: '',
+      description: '',
+      order: 1
+    })
+    setEditingHighlightId(null)
+  }
+
+  // Curriculum Functions
+  const handleAddCurriculumYear = async () => {
+    if (!curriculumForm.year.trim() || !curriculumForm.description.trim()) {
+      toast.error('Year and description are required')
+      return
+    }
+
+    try {
+      const newCurriculumYear: CurriculumYear = {
+        year: curriculumForm.year.trim(),
+        description: curriculumForm.description.trim(),
+        imageUrl: curriculumForm.imageUrl,
+        order: curriculumForm.order,
+        semesters: curriculumForm.semesters.filter(sem => sem.semester.trim() && sem.subjects.length > 0)
+      }
+
+      const updatedCurriculum = [...(program?.curriculum || []), newCurriculumYear]
+      
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        curriculum: updatedCurriculum
+      })
+
+      // Reset form
+      setCurriculumForm({
+        year: '',
+        description: '',
+        imageUrl: '',
+        order: 1,
+        semesters: [{ semester: '', subjects: [''], order: 1 }]
+      })
+
+      toast.success('Curriculum year added successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error adding curriculum year:', error)
+      toast.error('Failed to add curriculum year')
+    }
+  }
+
+  const handleEditCurriculumYear = (index: number) => {
+    const curriculumYear = program?.curriculum?.[index]
+    if (curriculumYear) {
+      setCurriculumForm({
+        year: curriculumYear.year,
+        description: curriculumYear.description || '',
+        imageUrl: curriculumYear.imageUrl || '',
+        order: curriculumYear.order,
+        semesters: curriculumYear.semesters && curriculumYear.semesters.length > 0 
+          ? curriculumYear.semesters 
+          : [{ semester: '', subjects: [''], order: 1 }]
+      })
+      setEditingCurriculumId(index.toString())
+    }
+  }
+
+  const handleUpdateCurriculumYear = async () => {
+    if (!editingCurriculumId || !curriculumForm.year.trim() || !curriculumForm.description.trim()) {
+      toast.error('Year and description are required')
+      return
+    }
+
+    try {
+      const index = parseInt(editingCurriculumId)
+      const updatedCurriculum = [...(program?.curriculum || [])]
+      
+      updatedCurriculum[index] = {
+        year: curriculumForm.year.trim(),
+        description: curriculumForm.description.trim(),
+        imageUrl: curriculumForm.imageUrl,
+        order: curriculumForm.order,
+        semesters: curriculumForm.semesters.filter(sem => sem.semester.trim() && sem.subjects.length > 0)
+      }
+
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        curriculum: updatedCurriculum
+      })
+
+      // Reset form and editing state
+      setCurriculumForm({
+        year: '',
+        description: '',
+        imageUrl: '',
+        order: 1,
+        semesters: [{ semester: '', subjects: [''], order: 1 }]
+      })
+      setEditingCurriculumId(null)
+
+      toast.success('Curriculum year updated successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error updating curriculum year:', error)
+      toast.error('Failed to update curriculum year')
+    }
+  }
+
+  const handleDeleteCurriculumYear = async (index: number) => {
+    if (!confirm('Are you sure you want to delete this curriculum year?')) {
+      return
+    }
+
+    try {
+      const updatedCurriculum = [...(program?.curriculum || [])]
+      updatedCurriculum.splice(index, 1)
+
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        curriculum: updatedCurriculum
+      })
+
+      toast.success('Curriculum year deleted successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error deleting curriculum year:', error)
+      toast.error('Failed to delete curriculum year')
+    }
+  }
+
+  const handleCancelCurriculumEdit = () => {
+    setCurriculumForm({
+      year: '',
+      description: '',
+      imageUrl: '',
+      order: 1,
+      semesters: [{ semester: '', subjects: [''], order: 1 }]
+    })
+    setEditingCurriculumId(null)
+  }
+
+  // Semester management functions
+  const addSemester = () => {
+    setCurriculumForm(prev => ({
+      ...prev,
+      semesters: [...prev.semesters, { semester: '', subjects: [''], order: prev.semesters.length + 1 }]
+    }))
+  }
+
+  const removeSemester = (semesterIndex: number) => {
+    setCurriculumForm(prev => ({
+      ...prev,
+      semesters: prev.semesters.filter((_, index) => index !== semesterIndex)
+    }))
+  }
+
+  const updateSemester = (semesterIndex: number, field: string, value: string | number) => {
+    setCurriculumForm(prev => ({
+      ...prev,
+      semesters: prev.semesters.map((sem, index) => 
+        index === semesterIndex 
+          ? { ...sem, [field]: value }
+          : sem
+      )
+    }))
+  }
+
+  const addSubject = (semesterIndex: number) => {
+    setCurriculumForm(prev => ({
+      ...prev,
+      semesters: prev.semesters.map((sem, index) => 
+        index === semesterIndex 
+          ? { ...sem, subjects: [...sem.subjects, ''] }
+          : sem
+      )
+    }))
+  }
+
+  const removeSubject = (semesterIndex: number, subjectIndex: number) => {
+    setCurriculumForm(prev => ({
+      ...prev,
+      semesters: prev.semesters.map((sem, index) => 
+        index === semesterIndex 
+          ? { ...sem, subjects: sem.subjects.filter((_, subIndex) => subIndex !== subjectIndex) }
+          : sem
+      )
+    }))
+  }
+
+  const updateSubject = (semesterIndex: number, subjectIndex: number, value: string) => {
+    setCurriculumForm(prev => ({
+      ...prev,
+      semesters: prev.semesters.map((sem, index) => 
+        index === semesterIndex 
+          ? { 
+              ...sem, 
+              subjects: sem.subjects.map((subject, subIndex) => 
+                subIndex === subjectIndex ? value : subject
+              )
+            }
+          : sem
+      )
+    }))
+  }
+
+  // Software Functions
+  const handleAddSoftware = async () => {
+    if (!softwareForm.name.trim() || !softwareForm.description.trim()) {
+      toast.error('Name and description are required')
+      return
+    }
+
+    try {
+      const newSoftware: SoftwareTool = {
+        name: softwareForm.name.trim(),
+        description: softwareForm.description.trim(),
+        logoUrl: softwareForm.logoUrl,
+        order: softwareForm.order
+      }
+
+      const updatedSoftware = [...(program?.softwareTools || []), newSoftware]
+      
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        softwareTools: updatedSoftware
+      })
+
+      // Reset form
+      setSoftwareForm({
+        name: '',
+        logoUrl: '',
+        description: '',
+        order: 1
+      })
+
+      toast.success('Software added successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error adding software:', error)
+      toast.error('Failed to add software')
+    }
+  }
+
+  const handleEditSoftware = (index: number) => {
+    const software = program?.softwareTools?.[index]
+    if (software) {
+      setSoftwareForm({
+        name: software.name,
+        description: software.description || '',
+        logoUrl: software.logoUrl || '',
+        order: software.order
+      })
+      setEditingSoftwareId(index.toString())
+    }
+  }
+
+  const handleUpdateSoftware = async () => {
+    if (!editingSoftwareId || !softwareForm.name.trim() || !softwareForm.description.trim()) {
+      toast.error('Name and description are required')
+      return
+    }
+
+    try {
+      const index = parseInt(editingSoftwareId)
+      const updatedSoftware = [...(program?.softwareTools || [])]
+      
+      updatedSoftware[index] = {
+        name: softwareForm.name.trim(),
+        description: softwareForm.description.trim(),
+        logoUrl: softwareForm.logoUrl,
+        order: softwareForm.order
+      }
+
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        softwareTools: updatedSoftware
+      })
+
+      // Reset form and editing state
+      setSoftwareForm({
+        name: '',
+        logoUrl: '',
+        description: '',
+        order: 1
+      })
+      setEditingSoftwareId(null)
+
+      toast.success('Software updated successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error updating software:', error)
+      toast.error('Failed to update software')
+    }
+  }
+
+  const handleDeleteSoftware = async (index: number) => {
+    if (!confirm('Are you sure you want to delete this software?')) {
+      return
+    }
+
+    try {
+      const updatedSoftware = [...(program?.softwareTools || [])]
+      updatedSoftware.splice(index, 1)
+
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        softwareTools: updatedSoftware
+      })
+
+      toast.success('Software deleted successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error deleting software:', error)
+      toast.error('Failed to delete software')
+    }
+  }
+
+  const handleCancelSoftwareEdit = () => {
+    setSoftwareForm({
+      name: '',
+      logoUrl: '',
+      description: '',
+      order: 1
+    })
+    setEditingSoftwareId(null)
+  }
+
+  // Career Path Functions
+  const handleAddCareerPath = async () => {
+    if (!careerForm.title.trim() || careerForm.roles.length === 0 || !careerForm.roles[0].trim()) {
+      toast.error('Title and at least one role are required')
+      return
+    }
+
+    try {
+      const newCareerPath: CareerPath = {
+        title: careerForm.title.trim(),
+        roles: careerForm.roles.filter(role => role.trim()),
+        description: careerForm.description.trim(),
+        order: careerForm.order
+      }
+
+      const updatedCareerPaths = [...(program?.careerPaths || []), newCareerPath]
+      
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        careerPaths: updatedCareerPaths
+      })
+
+      // Reset form
+      setCareerForm({
+        title: '',
+        roles: [''],
+        description: '',
+        order: 1
+      })
+
+      toast.success('Career path added successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error adding career path:', error)
+      toast.error('Failed to add career path')
+    }
+  }
+
+  const handleEditCareerPath = (index: number) => {
+    const careerPath = program?.careerPaths?.[index]
+    if (careerPath) {
+      setCareerForm({
+        title: careerPath.title,
+        roles: careerPath.roles.length > 0 ? careerPath.roles : [''],
+        description: careerPath.description || '',
+        order: careerPath.order
+      })
+      setEditingCareerId(index.toString())
+    }
+  }
+
+  const handleUpdateCareerPath = async () => {
+    if (!editingCareerId || !careerForm.title.trim() || careerForm.roles.length === 0 || !careerForm.roles[0].trim()) {
+      toast.error('Title and at least one role are required')
+      return
+    }
+
+    try {
+      const index = parseInt(editingCareerId)
+      const updatedCareerPaths = [...(program?.careerPaths || [])]
+      
+      updatedCareerPaths[index] = {
+        title: careerForm.title.trim(),
+        roles: careerForm.roles.filter(role => role.trim()),
+        description: careerForm.description.trim(),
+        order: careerForm.order
+      }
+
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        careerPaths: updatedCareerPaths
+      })
+
+      // Reset form and editing state
+      setCareerForm({
+        title: '',
+        roles: [''],
+        description: '',
+        order: 1
+      })
+      setEditingCareerId(null)
+
+      toast.success('Career path updated successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error updating career path:', error)
+      toast.error('Failed to update career path')
+    }
+  }
+
+  const handleDeleteCareerPath = async (index: number) => {
+    if (!confirm('Are you sure you want to delete this career path?')) {
+      return
+    }
+
+    try {
+      const updatedCareerPaths = [...(program?.careerPaths || [])]
+      updatedCareerPaths.splice(index, 1)
+
+      // Get the parent course ID
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        careerPaths: updatedCareerPaths
+      })
+
+      toast.success('Career path deleted successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error deleting career path:', error)
+      toast.error('Failed to delete career path')
+    }
+  }
+
+  const handleCancelCareerEdit = () => {
+    setCareerForm({
+      title: '',
+      roles: [''],
+      description: '',
+      order: 1
+    })
+    setEditingCareerId(null)
+  }
+
+  // Role management functions
+  const addRole = () => {
+    setCareerForm(prev => ({
+      ...prev,
+      roles: [...prev.roles, '']
+    }))
+  }
+
+  const removeRole = (roleIndex: number) => {
+    setCareerForm(prev => ({
+      ...prev,
+      roles: prev.roles.filter((_, index) => index !== roleIndex)
+    }))
+  }
+
+  const updateRole = (roleIndex: number, value: string) => {
+    setCareerForm(prev => ({
+      ...prev,
+      roles: prev.roles.map((role, index) => 
+        index === roleIndex ? value : role
+      )
+    }))
+  }
+
   if (loading) {
     return (
-      <div className="p-6 max-w-6xl mx-auto">
+      <div className="p-6">
         <div className="flex justify-center items-center h-64">
-          <div className="text-lg">Loading program details...</div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="text-lg">Loading program details...</div>
+            <div className="text-sm text-gray-500 mt-2">Fetching data for program ID: {programId}</div>
+          </div>
         </div>
       </div>
     )
@@ -243,11 +1023,14 @@ export default function EditCourseProgramDetailsPage() {
 
   if (!program) {
     return (
-      <div className="p-6 max-w-6xl mx-auto">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Program Details Not Found</h1>
+      <div className="p-6">
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Program not found</h3>
+          <p className="text-gray-500 mb-4">The program you're looking for doesn't exist or has been removed.</p>
           <Button asChild>
-            <Link href="/dashboard/courses/program-details">Back to Program Details</Link>
+            <Link href="/dashboard/courses/program-details">
+              Back to Program Details
+            </Link>
           </Button>
         </div>
       </div>
@@ -276,15 +1059,13 @@ export default function EditCourseProgramDetailsPage() {
       </div>
 
       <Tabs defaultValue="basic" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="basic">Basic Info</TabsTrigger>
           <TabsTrigger value="admission">Admission ({program.admissionSteps?.length || 0})</TabsTrigger>
           <TabsTrigger value="highlights">Highlights ({program.programHighlights?.length || 0})</TabsTrigger>
           <TabsTrigger value="curriculum">Curriculum ({program.curriculum?.length || 0})</TabsTrigger>
           <TabsTrigger value="software">Software ({program.softwareTools?.length || 0})</TabsTrigger>
           <TabsTrigger value="careers">Careers ({program.careerPaths?.length || 0})</TabsTrigger>
-          <TabsTrigger value="partners">Partners ({program.industryPartners?.length || 0})</TabsTrigger>
-          <TabsTrigger value="gallery">Gallery ({program.galleryImages?.length || 0})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="basic">
@@ -387,15 +1168,7 @@ export default function EditCourseProgramDetailsPage() {
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="admissionQuote">Admission Quote (Optional)</Label>
-                  <Input
-                    id="admissionQuote"
-                    value={formData.admissionQuote}
-                    onChange={(e) => handleInputChange('admissionQuote', e.target.value)}
-                    placeholder="Join us on an exhilarating journey of creativity..."
-                  />
-                </div>
+                
               </CardContent>
             </Card>
 
@@ -509,47 +1282,654 @@ export default function EditCourseProgramDetailsPage() {
           </form>
         </TabsContent>
 
-        {/* Other tabs will be added in the next part */}
+        {/* Admission Steps Tab */}
         <TabsContent value="admission">
-          <div className="text-center py-8">
-            <p className="text-gray-500">Admission steps management coming soon...</p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Admission Process Steps</CardTitle>
+              <CardDescription>Manage the step-by-step admission process</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Add New Admission Step */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <h4 className="font-medium">
+                  {editingAdmissionStepId ? 'Edit Admission Step' : 'Add New Admission Step'}
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="stepIcon">Icon (Emoji)</Label>
+                    <Input
+                      id="stepIcon"
+                      value={admissionStepForm.icon}
+                      onChange={(e) => setAdmissionStepForm(prev => ({ ...prev, icon: e.target.value }))}
+                      placeholder="🎓"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="stepNumber">Step Number</Label>
+                    <Input
+                      id="stepNumber"
+                      type="number"
+                      value={admissionStepForm.stepNumber}
+                      onChange={(e) => setAdmissionStepForm(prev => ({ ...prev, stepNumber: parseInt(e.target.value) }))}
+                      min="1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="stepTitle">Title</Label>
+                    <Input
+                      id="stepTitle"
+                      value={admissionStepForm.title}
+                      onChange={(e) => setAdmissionStepForm(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Submit Application"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="stepOrder">Display Order</Label>
+                    <Input
+                      id="stepOrder"
+                      type="number"
+                      value={admissionStepForm.order}
+                      onChange={(e) => setAdmissionStepForm(prev => ({ ...prev, order: parseInt(e.target.value) }))}
+                      min="1"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="stepDescription">Description</Label>
+                  <Textarea
+                    id="stepDescription"
+                    value={admissionStepForm.description}
+                    onChange={(e) => setAdmissionStepForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Complete the online application form with all required documents..."
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    onClick={editingAdmissionStepId ? handleUpdateAdmissionStep : handleAddAdmissionStep}
+                  >
+                    {editingAdmissionStepId ? 'Update Admission Step' : 'Add Admission Step'}
+                  </Button>
+                  {editingAdmissionStepId && (
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={handleCancelEdit}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Existing Admission Steps */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Existing Admission Steps</h4>
+                {program.admissionSteps && program.admissionSteps.length > 0 ? (
+                  <div className="space-y-3">
+                    {program.admissionSteps.map((step, index) => (
+                      <div key={index} className="border rounded-lg p-4 flex justify-between items-start">
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl">{step.icon}</span>
+                          <div>
+                            <h5 className="font-medium">{step.title}</h5>
+                            <p className="text-sm text-gray-600">{step.description}</p>
+                            <p className="text-xs text-gray-500">Step {step.stepNumber} • Order {step.order}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleEditAdmissionStep(index)}>Edit</Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteAdmissionStep(index)}>Delete</Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">No admission steps added yet.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
+        {/* Program Highlights Tab */}
         <TabsContent value="highlights">
-          <div className="text-center py-8">
-            <p className="text-gray-500">Program highlights management coming soon...</p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Program Highlights</CardTitle>
+              <CardDescription>Key features and benefits of the program</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Add New Highlight */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <h4 className="font-medium">
+                  {editingHighlightId ? 'Edit Program Highlight' : 'Add New Program Highlight'}
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="highlightIcon">Icon (Emoji)</Label>
+                    <Input
+                      id="highlightIcon"
+                      value={highlightForm.icon}
+                      onChange={(e) => setHighlightForm(prev => ({ ...prev, icon: e.target.value }))}
+                      placeholder="⭐"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="highlightOrder">Display Order</Label>
+                    <Input
+                      id="highlightOrder"
+                      type="number"
+                      value={highlightForm.order}
+                      onChange={(e) => setHighlightForm(prev => ({ ...prev, order: parseInt(e.target.value) }))}
+                      min="1"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="highlightTitle">Title</Label>
+                    <Input
+                      id="highlightTitle"
+                      value={highlightForm.title}
+                      onChange={(e) => setHighlightForm(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Industry-Relevant Curriculum"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="highlightDescription">Description</Label>
+                  <Textarea
+                    id="highlightDescription"
+                    value={highlightForm.description}
+                    onChange={(e) => setHighlightForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Our curriculum is designed in collaboration with industry experts..."
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    onClick={editingHighlightId ? handleUpdateHighlight : handleAddHighlight}
+                  >
+                    {editingHighlightId ? 'Update Program Highlight' : 'Add Program Highlight'}
+                  </Button>
+                  {editingHighlightId && (
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={handleCancelHighlightEdit}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Existing Highlights */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Existing Program Highlights</h4>
+                {program.programHighlights && program.programHighlights.length > 0 ? (
+                  <div className="space-y-3">
+                    {program.programHighlights.map((highlight, index) => (
+                      <div key={index} className="border rounded-lg p-4 flex justify-between items-start">
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl">{highlight.icon}</span>
+                          <div>
+                            <h5 className="font-medium">{highlight.title}</h5>
+                            <p className="text-sm text-gray-600">{highlight.description}</p>
+                            <p className="text-xs text-gray-500">Order {highlight.order}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleEditHighlight(index)}>Edit</Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteHighlight(index)}>Delete</Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">No program highlights added yet.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
+        {/* Curriculum Tab */}
         <TabsContent value="curriculum">
-          <div className="text-center py-8">
-            <p className="text-gray-500">Curriculum management coming soon...</p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Curriculum Structure</CardTitle>
+              <CardDescription>Year-wise curriculum with semesters and subjects</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Add New Curriculum Year */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <h4 className="font-medium">
+                  {editingCurriculumId ? 'Edit Curriculum Year' : 'Add New Curriculum Year'}
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="curriculumYear">Year</Label>
+                    <Input
+                      id="curriculumYear"
+                      value={curriculumForm.year}
+                      onChange={(e) => setCurriculumForm(prev => ({ ...prev, year: e.target.value }))}
+                      placeholder="1st Year"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="curriculumOrder">Display Order</Label>
+                    <Input
+                      id="curriculumOrder"
+                      type="number"
+                      value={curriculumForm.order}
+                      onChange={(e) => setCurriculumForm(prev => ({ ...prev, order: parseInt(e.target.value) }))}
+                      min="1"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="curriculumDescription">Description</Label>
+                    <Textarea
+                      id="curriculumDescription"
+                      value={curriculumForm.description}
+                      onChange={(e) => setCurriculumForm(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Foundation year focusing on basic design principles..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                {/* Semester Management */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h5 className="font-medium">Semesters</h5>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      onClick={addSemester}
+                    >
+                      Add Semester
+                    </Button>
+                  </div>
+                  
+                  {curriculumForm.semesters.map((semester, semesterIndex) => (
+                    <div key={semesterIndex} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h6 className="font-medium">Semester {semesterIndex + 1}</h6>
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => removeSemester(semesterIndex)}
+                        >
+                          Remove Semester
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor={`semester-${semesterIndex}`}>Semester Name</Label>
+                          <Input
+                            id={`semester-${semesterIndex}`}
+                            value={semester.semester}
+                            onChange={(e) => updateSemester(semesterIndex, 'semester', e.target.value)}
+                            placeholder="Semester 1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`semester-order-${semesterIndex}`}>Order</Label>
+                          <Input
+                            id={`semester-order-${semesterIndex}`}
+                            type="number"
+                            value={semester.order}
+                            onChange={(e) => updateSemester(semesterIndex, 'order', parseInt(e.target.value))}
+                            min="1"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <Label>Subjects</Label>
+                          <Button 
+                            type="button" 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => addSubject(semesterIndex)}
+                          >
+                            Add Subject
+                          </Button>
+                        </div>
+                        
+                        {semester.subjects.map((subject, subjectIndex) => (
+                          <div key={subjectIndex} className="flex gap-2">
+                            <Input
+                              value={subject}
+                              onChange={(e) => updateSubject(semesterIndex, subjectIndex, e.target.value)}
+                              placeholder="Subject name"
+                              className="flex-1"
+                            />
+                            <Button 
+                              type="button" 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => removeSubject(semesterIndex, subjectIndex)}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    onClick={editingCurriculumId ? handleUpdateCurriculumYear : handleAddCurriculumYear}
+                  >
+                    {editingCurriculumId ? 'Update Curriculum Year' : 'Add Curriculum Year'}
+                  </Button>
+                  {editingCurriculumId && (
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={handleCancelCurriculumEdit}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Existing Curriculum */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Existing Curriculum</h4>
+                {program.curriculum && program.curriculum.length > 0 ? (
+                  <div className="space-y-4">
+                    {program.curriculum.map((curriculumYear, yearIndex) => (
+                      <div key={yearIndex} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h5 className="font-medium">{curriculumYear.year}</h5>
+                            <div className="text-sm text-gray-600">
+                              {curriculumYear.description}
+                            </div>
+                            {curriculumYear.semesters && curriculumYear.semesters.length > 0 && (
+                              <div className="mt-2">
+                                <div className="text-sm font-medium text-gray-700 mb-1">Semesters:</div>
+                                {curriculumYear.semesters.map((semester, semesterIndex) => (
+                                  <div key={semesterIndex} className="ml-4 mb-2">
+                                    <div className="text-sm font-medium text-gray-600">
+                                      {semester.semester} (Order: {semester.order})
+                                    </div>
+                                    {semester.subjects && semester.subjects.length > 0 && (
+                                      <div className="ml-4 text-xs text-gray-500">
+                                        {semester.subjects.map((subject, subjectIndex) => (
+                                          <div key={subjectIndex}>• {subject}</div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => handleEditCurriculumYear(yearIndex)}>Edit</Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleDeleteCurriculumYear(yearIndex)}>Delete</Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">No curriculum added yet.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
+        {/* Software Tools Tab */}
         <TabsContent value="software">
-          <div className="text-center py-8">
-            <p className="text-gray-500">Software tools management coming soon...</p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Software & Tools</CardTitle>
+              <CardDescription>Software applications and tools taught in the program</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Add New Software */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <h4 className="font-medium">
+                  {editingSoftwareId ? 'Edit Software Tool' : 'Add New Software Tool'}
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="softwareName">Software Name</Label>
+                    <Input
+                      id="softwareName"
+                      value={softwareForm.name}
+                      onChange={(e) => setSoftwareForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="AutoCAD"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="softwareOrder">Display Order</Label>
+                    <Input
+                      id="softwareOrder"
+                      type="number"
+                      value={softwareForm.order}
+                      onChange={(e) => setSoftwareForm(prev => ({ ...prev, order: parseInt(e.target.value) }))}
+                      min="1"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <ImageUpload
+                      label="Logo URL"
+                      value={softwareForm.logoUrl}
+                      onChange={(url) => setSoftwareForm(prev => ({ ...prev, logoUrl: url }))}
+                      placeholder="https://example.com/autocad-logo.png or upload below"
+                      description="Upload software logo or enter URL"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="softwareDescription">Description</Label>
+                  <Textarea
+                    id="softwareDescription"
+                    value={softwareForm.description}
+                    onChange={(e) => setSoftwareForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Industry-standard CAD software for 2D and 3D design..."
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    onClick={editingSoftwareId ? handleUpdateSoftware : handleAddSoftware}
+                  >
+                    {editingSoftwareId ? 'Update Software Tool' : 'Add Software Tool'}
+                  </Button>
+                  {editingSoftwareId && (
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={handleCancelSoftwareEdit}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Existing Software */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Existing Software Tools</h4>
+                {program.softwareTools && program.softwareTools.length > 0 ? (
+                  <div className="space-y-3">
+                    {program.softwareTools.map((software, index) => (
+                      <div key={index} className="border rounded-lg p-4 flex justify-between items-start">
+                        <div className="flex items-start gap-3">
+                          {software.logoUrl && (
+                            <img src={software.logoUrl} alt={software.name} className="w-8 h-8 object-contain" />
+                          )}
+                          <div>
+                            <h5 className="font-medium">{software.name}</h5>
+                            <p className="text-sm text-gray-600">{software.description}</p>
+                            <p className="text-xs text-gray-500">Order {software.order}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleEditSoftware(index)}>Edit</Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteSoftware(index)}>Delete</Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">No software tools added yet.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
+        {/* Career Paths Tab */}
         <TabsContent value="careers">
-          <div className="text-center py-8">
-            <p className="text-gray-500">Career paths management coming soon...</p>
-          </div>
-        </TabsContent>
+          <Card>
+            <CardHeader>
+              <CardTitle>Career Paths</CardTitle>
+              <CardDescription>Potential career opportunities after completing the program</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Add New Career Path */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <h4 className="font-medium">
+                  {editingCareerId ? 'Edit Career Path' : 'Add New Career Path'}
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="careerTitle">Career Title</Label>
+                    <Input
+                      id="careerTitle"
+                      value={careerForm.title}
+                      onChange={(e) => setCareerForm(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Interior Designer"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="careerOrder">Display Order</Label>
+                    <Input
+                      id="careerOrder"
+                      type="number"
+                      value={careerForm.order}
+                      onChange={(e) => setCareerForm(prev => ({ ...prev, order: parseInt(e.target.value) }))}
+                      min="1"
+                    />
+                  </div>
+                </div>
+                
+                {/* Roles Management */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <Label>Roles</Label>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      onClick={addRole}
+                    >
+                      Add Role
+                    </Button>
+                  </div>
+                  
+                  {careerForm.roles.map((role, roleIndex) => (
+                    <div key={roleIndex} className="flex gap-2">
+                      <Input
+                        value={role}
+                        onChange={(e) => updateRole(roleIndex, e.target.value)}
+                        placeholder="e.g., Residential Designer"
+                        className="flex-1"
+                      />
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={() => removeRole(roleIndex)}
+                        disabled={careerForm.roles.length === 1}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
 
-        <TabsContent value="partners">
-          <div className="text-center py-8">
-            <p className="text-gray-500">Industry partners management coming soon...</p>
-          </div>
-        </TabsContent>
+                <div>
+                  <Label htmlFor="careerDescription">Description</Label>
+                  <Textarea
+                    id="careerDescription"
+                    value={careerForm.description}
+                    onChange={(e) => setCareerForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Design and create functional, safe, and beautiful spaces..."
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    onClick={editingCareerId ? handleUpdateCareerPath : handleAddCareerPath}
+                  >
+                    {editingCareerId ? 'Update Career Path' : 'Add Career Path'}
+                  </Button>
+                  {editingCareerId && (
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={handleCancelCareerEdit}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </div>
 
-        <TabsContent value="gallery">
-          <div className="text-center py-8">
-            <p className="text-gray-500">Gallery management coming soon...</p>
-          </div>
+              {/* Existing Career Paths */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Existing Career Paths</h4>
+                {program.careerPaths && program.careerPaths.length > 0 ? (
+                  <div className="space-y-3">
+                    {program.careerPaths.map((career, index) => (
+                      <div key={index} className="border rounded-lg p-4 flex justify-between items-start">
+                        <div>
+                          <h5 className="font-medium">{career.title}</h5>
+                          <p className="text-sm text-gray-600">{career.description}</p>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {career.roles.map((role, roleIndex) => (
+                              <Badge key={roleIndex} variant="secondary" className="text-xs">
+                                {role}
+                              </Badge>
+                            ))}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">Order {career.order}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleEditCareerPath(index)}>Edit</Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteCareerPath(index)}>Delete</Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">No career paths added yet.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

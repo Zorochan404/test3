@@ -15,6 +15,7 @@ const buttons = [
   { "link": "blog", "title": "Blogs" },
   { "link": "advisors", "title": "Advisor and Mentor" },
   { "link": "download", "title": "Downloads" },
+  { "link": "enquiries", "title": "Enquiries" },
 ]
 
 // const toSlug = (str: string) => str.toLowerCase().replace(/\s+/g, "-");

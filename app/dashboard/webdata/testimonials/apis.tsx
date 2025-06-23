@@ -1,26 +1,25 @@
+import { buildApiUrl, getApiHeaders } from '@/lib/api-config';
+
 export async function getTestimonials() {
-    const response = await fetch('https://backend-rakj.onrender.com/api/v1/testimonials/gettestimonials');
+    const response = await fetch(buildApiUrl('testimonials/gettestimonials'));
     const Testimonials = await response.json();
     return Testimonials.data;
 }
 
 export async function getTestimonialById(id: string) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/testimonials/gettestimonialsbyid/${id}`);
+    const response = await fetch(buildApiUrl(`testimonials/gettestimonialsbyid/${id}`));
     const Testimonial = await response.json();
     return Testimonial.data;
 }
 
 export async function deleteTestimonialById(id: string) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/testimonials/deletetestimonials/${id}`,{
+    const response = await fetch(buildApiUrl(`testimonials/deletetestimonials/${id}`), {
         method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: getApiHeaders(),
     });
     const Testimonial = await response.json();
     return Testimonial.data;
 }
-
 
 export interface TestimonialData {
     name: string;
@@ -29,11 +28,9 @@ export interface TestimonialData {
 }
 
 export async function updateTestimonialById(id: string, data: TestimonialData) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/testimonials/updatetestimonials/${id}`, {
+    const response = await fetch(buildApiUrl(`testimonials/updatetestimonials/${id}`), {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: getApiHeaders(),
         body: JSON.stringify(data)
     });
     
@@ -45,12 +42,10 @@ export async function updateTestimonialById(id: string, data: TestimonialData) {
     return Testimonial.data;
 }
 
-export async function addTestimonial( data: TestimonialData) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/testimonials/addtestimonials`, {
+export async function addTestimonial(data: TestimonialData) {
+    const response = await fetch(buildApiUrl('testimonials/addtestimonials'), {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: getApiHeaders(),
         body: JSON.stringify(data)
     });
     

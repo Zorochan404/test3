@@ -489,18 +489,7 @@ export default function AddCourseProgramDetailsPage() {
               </p>
             </div>
 
-            <div>
-              <Label htmlFor="admissionQuote">Admission Quote (Optional)</Label>
-              <Input
-                id="admissionQuote"
-                value={formData.admissionQuote}
-                onChange={(e) => handleInputChange('admissionQuote', e.target.value)}
-                placeholder="Join us on an exhilarating journey of creativity, innovation, and celebrity-inspired design education."
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                Inspirational quote for the admission section
-              </p>
-            </div>
+           
           </CardContent>
         </Card>
 
