@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { uploadToCloudinary } from '@/utils/cloudinary'
-import { addTestimonial } from '../apis'
+import { createTestimonial } from '../apis'
+import { ErrorDisplay } from '@/components/error-display'
 
 type Testimonial = {
   name: string;
@@ -24,9 +25,9 @@ export default function EditPage() {
     src: '',
     feedback: ''
   })
-  // const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<any>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,17 +66,26 @@ export default function EditPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
+    setError(null) // Clear any previous errors
+    
     try {
       const formData = {
         name: testimonial.name,
         imageUrl: testimonial.src,
         feedback: testimonial.feedback
       }
-      await addTestimonial(formData)
-      alert("Testimonial details added successfully")
+      await createTestimonial(formData)
+      toast.success("Testimonial details added successfully")
+      
+      // Reset form
+      setTestimonial({
+        name: '',
+        src: '',
+        feedback: ''
+      })
     } catch (error) {
-      console.error('Error updating company:', error)
-      toast.error("Failed to update company details")
+      console.error('Error adding testimonial:', error)
+      setError(error) // Use ErrorDisplay instead of toast.error
     } finally {
       setSubmitting(false)
     }
@@ -88,6 +98,10 @@ export default function EditPage() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Add Testimonial</h1>
+      
+      {/* Display API errors */}
+      <ErrorDisplay error={error} onClose={() => setError(null)} />
+      
       <form onSubmit={handleSubmit} className="space-y-6 max-w-md">
         <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
@@ -95,14 +109,18 @@ export default function EditPage() {
             id="name"
             value={testimonial.name}
             onChange={(e) => setTestimonial(prev => ({ ...prev, name: e.target.value }))}
+            placeholder="Enter testimonial name"
+            required
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="feedback"> Feedback</Label>
+          <Label htmlFor="feedback">Feedback</Label>
           <Input
             id="feedback"
             value={testimonial.feedback}
             onChange={(e) => setTestimonial(prev => ({ ...prev, feedback: e.target.value }))}
+            placeholder="Enter testimonial feedback"
+            required
           />
         </div>
         <div className="space-y-2">
@@ -129,7 +147,7 @@ export default function EditPage() {
             <div className="mt-4">
               <img
                 src={testimonial.src}
-                alt="Company logo"
+                alt="Testimonial image"
                 className="h-20 w-20 object-contain rounded"
               />
             </div>

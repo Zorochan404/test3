@@ -33,7 +33,7 @@ export default function EditPage() {
     const fetchTestimonial = async () => {
       try {
         const data = await getTestimonialById(id)
-        setTestimonial(data)
+        setTestimonial(data as Testimonial | null)
         setLoading(false)
       } catch (error) {
         console.error('Error fetching testimonial:', error)

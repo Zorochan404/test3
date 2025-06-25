@@ -33,7 +33,7 @@ export default function EditPage() {
     const fetchAdvisor = async () => {
       try {
         const data = await getadvisorById(id)
-        setAdvisor(data)
+        setAdvisor(data as advisor | null)
         setLoading(false)
       } catch (error) {
         console.error('Error fetching advisor:', error)

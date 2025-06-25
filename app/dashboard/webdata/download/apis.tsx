@@ -1,5 +1,7 @@
 // Download API functions and types
 
+import { apiClient, handleApiResponse } from '@/lib/api-config';
+
 export interface DownloadItem {
   id: string;
   _id?: string; // Optional MongoDB _id for backward compatibility
@@ -56,14 +58,8 @@ export interface DownloadCategoryData {
 // API Functions
 export async function getDownloads(): Promise<DownloadItem[]> {
   try {
-    const response = await fetch('https://backend-rakj.onrender.com/api/v1/download/getdownloads');
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch downloads');
-    }
-    
-    const result = await response.json();
-    return result.data || [];
+    const response = await apiClient.get('/download/getdownloads');
+    return handleApiResponse<DownloadItem[]>(response);
   } catch (error) {
     console.error('Error fetching downloads:', error);
     throw error;
@@ -72,18 +68,12 @@ export async function getDownloads(): Promise<DownloadItem[]> {
 
 export async function getDownloadById(id: string): Promise<DownloadItem | null> {
   try {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/download/getdownloadbyid/${id}`);
-    
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null; // Download not found
-      }
-      throw new Error('Failed to fetch download');
+    const response = await apiClient.get(`/download/getdownloadbyid/${id}`);
+    return handleApiResponse<DownloadItem>(response);
+  } catch (error: any) {
+    if (error.status === 404) {
+      return null; // Download not found
     }
-    
-    const result = await response.json();
-    return result.data;
-  } catch (error) {
     console.error('Error fetching download:', error);
     throw error;
   }
@@ -122,20 +112,8 @@ export async function createDownload(data: DownloadItemData): Promise<DownloadIt
       isActive: true
     };
     
-    const response = await fetch('https://backend-rakj.onrender.com/api/v1/download/adddownload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(downloadPayload)
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to create download');
-    }
-    
-    const result = await response.json();
-    return result.data;
-   
+    const response = await apiClient.post('/download/adddownload', downloadPayload);
+    return handleApiResponse<DownloadItem>(response);
   } catch (error) {
     console.error('Error creating download:', error);
     throw error;
@@ -172,20 +150,8 @@ export async function updateDownload(id: string, data: DownloadItemData): Promis
       description: data.description.trim()
     };
     
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/download/updatedownload/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(downloadPayload)
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to update download');
-    }
-    
-    const result = await response.json();
-    return result.data;
-   
+    const response = await apiClient.put(`/download/updatedownload/${id}`, downloadPayload);
+    return handleApiResponse<DownloadItem>(response);
   } catch (error) {
     console.error('Error updating download:', error);
     throw error;
@@ -194,14 +160,7 @@ export async function updateDownload(id: string, data: DownloadItemData): Promis
 
 export async function deleteDownload(id: string): Promise<void> {
   try {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/download/deletedownload/${id}`, {
-      method: 'DELETE'
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to delete download');
-    }
+    await apiClient.delete(`/download/deletedownload/${id}`);
   } catch (error) {
     console.error('Error deleting download:', error);
     throw error;
@@ -227,26 +186,20 @@ export function getFileExtension(filename: string): string {
 // Category API Functions
 export async function getCategories(): Promise<DownloadCategory[]> {
   try {
-    const response = await fetch('https://backend-rakj.onrender.com/api/v1/download/getcategories');
-
-    if (!response.ok) {
-      // If categories endpoint doesn't exist, return default categories
-      if (response.status === 404) {
-        return DEFAULT_DOWNLOAD_CATEGORIES.map((name, index) => ({
-          id: `default-${index}`,
-          name,
-          description: `Default category: ${name}`,
-          isActive: true,
-          createdDate: new Date().toISOString().split('T')[0],
-          downloadCount: 0
-        }));
-      }
-      throw new Error('Failed to fetch categories');
+    const response = await apiClient.get('/download/getcategories');
+    return handleApiResponse<DownloadCategory[]>(response);
+  } catch (error: any) {
+    // If categories endpoint doesn't exist, return default categories
+    if (error.status === 404) {
+      return DEFAULT_DOWNLOAD_CATEGORIES.map((name, index) => ({
+        id: `default-${index}`,
+        name,
+        description: `Default category: ${name}`,
+        isActive: true,
+        createdDate: new Date().toISOString().split('T')[0],
+        downloadCount: 0
+      }));
     }
-
-    const result = await response.json();
-    return result.data || [];
-  } catch (error) {
     console.error('Error fetching categories:', error);
     // Return default categories as fallback
     return DEFAULT_DOWNLOAD_CATEGORIES.map((name, index) => ({
@@ -259,8 +212,6 @@ export async function getCategories(): Promise<DownloadCategory[]> {
     }));
   }
 }
-
-
 
 export async function deleteCategory(id: string): Promise<void> {
   try {

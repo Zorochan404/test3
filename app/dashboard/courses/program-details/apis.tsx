@@ -1,5 +1,5 @@
 // Course Program Details API
-import { buildApiUrl, getApiHeaders } from '@/lib/api-config';
+import { buildApiUrl, getApiHeaders, apiClient, handleApiResponse } from '@/lib/api-config';
 
 const API_BASE_URL = buildApiUrl('courses')
 
@@ -163,6 +163,9 @@ export interface CourseProgram {
   // Fee & Benefits
   feeBenefits: CourseFeeBenefit[];
   
+  // Fee Structure
+  feeStructure?: FeeStructure;
+  
   // Eligibility
   eligibility: CourseEligibility[];
   
@@ -185,185 +188,182 @@ export interface CourseProgram {
   // Timestamps
   createdAt?: string;
   updatedAt?: string;
+
+  courseId?: string;
+  courseName?: string;
+  courseSlug?: string;
+}
+
+// Fee Structure Interfaces
+export interface EMIOption {
+  _id?: string;
+  months: number; // 3, 6, 12, 24, etc.
+  monthlyAmount: number;
+  totalAmount: number;
+  processingFee?: number;
+  interestRate?: number;
+  isActive: boolean;
+  order: number;
+}
+
+export interface CouponCode {
+  _id?: string;
+  code: string; // "SAVE20", "WELCOME50"
+  discountType: 'percentage' | 'fixed'; // percentage or fixed amount
+  discountValue: number; // 20 for 20% or 5000 for ₹5000
+  minimumAmount?: number; // minimum purchase amount required
+  maximumDiscount?: number; // maximum discount amount (for percentage)
+  validFrom: string; // ISO date string
+  validUntil: string; // ISO date string
+  usageLimit?: number; // total number of times this coupon can be used
+  usedCount: number; // number of times already used
+  isActive: boolean;
+  description?: string;
+  order: number;
+}
+
+export interface FeeStructure {
+  _id?: string;
+  totalFee: number;
+  monthlyFee?: number;
+  yearlyFee?: number;
+  processingFee?: number;
+  registrationFee?: number;
+  emiOptions: EMIOption[];
+  discountPercentage?: number; // general discount percentage
+  couponCodes: CouponCode[];
+  paymentTerms?: string; // "50% upfront, 50% in 3 months"
+  refundPolicy?: string;
+  isActive: boolean;
+  order: number;
 }
 
 // API Functions
 export async function getCoursePrograms(): Promise<CourseProgram[]> {
   try {
-    const response = await fetch(API_BASE_URL, {
-      headers: getApiHeaders(),
+    const response = await apiClient.get('/courses');
+    const result = handleApiResponse<any[]>(response);
+    
+    // Extract programs from all courses
+    const allPrograms: CourseProgram[] = [];
+    
+    result.forEach((course: any) => {
+      if (course.programs && Array.isArray(course.programs)) {
+        course.programs.forEach((program: any) => {
+          allPrograms.push({
+            ...program,
+            courseId: course._id,
+            courseName: course.name,
+            courseSlug: course.slug
+          });
+        });
+      }
     });
     
-    if (!response.ok) {
-      console.error('API Error:', response.status, response.statusText);
-      throw new Error(`Failed to fetch course programs: ${response.status} ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    console.log('API Response:', result);
-    
-    if (result.success && result.data && Array.isArray(result.data)) {
-      // Extract programs from all courses
-      const allPrograms: CourseProgram[] = [];
-      
-      result.data.forEach((course: any) => {
-        if (course.programs && Array.isArray(course.programs)) {
-          course.programs.forEach((program: any) => {
-            // Transform the program data to match our CourseProgram interface
-            const transformedProgram: CourseProgram = {
-              _id: program._id,
-              slug: program.slug || generateSlug(program.title),
-              title: program.title,
-              parentCourseSlug: course.slug,
-              parentCourseTitle: course.title,
-              heroImage: program.imageUrl || course.heroImage,
-              duration: program.duration,
-              description: program.description,
-              shortDescription: program.shortDescription,
-              courseOverview: program.courseOverview,
-              imageUrl: program.imageUrl,
-              detailsUrl: program.detailsUrl,
-              order: program.order,
-              admissionSteps: program.admissionSteps || [],
-              galleryImages: program.galleryImages || [],
-              programHighlights: program.programHighlights || [],
-              careerPaths: program.careerPaths || [],
-              curriculum: program.curriculum || [],
-              softwareTools: program.softwareTools || [],
-              industryPartners: program.industryPartners || [],
-              testimonials: program.testimonials || [],
-              faqs: program.faqs || [],
-              feeBenefits: program.feeBenefits || [],
-              eligibility: program.eligibility || [],
-              scheduleOptions: program.scheduleOptions || [],
-              ctaTitle: program.ctaTitle || 'Ready to Start Your Journey?',
-              ctaDescription: program.ctaDescription || 'Take the first step towards a successful career.',
-              ctaButtonText: program.ctaButtonText || 'Apply Now',
-              isActive: program.isActive,
-              metaTitle: program.metaTitle,
-              metaDescription: program.metaDescription,
-              metaKeywords: program.metaKeywords,
-              createdAt: program.createdAt,
-              updatedAt: program.updatedAt
-            };
-            allPrograms.push(transformedProgram);
-          });
-        }
-      });
-      
-      return allPrograms;
-    }
-    
-    return [];
+    return allPrograms;
   } catch (error) {
     console.error('Error fetching course programs:', error);
-    return [];
+    throw error;
   }
 }
 
 export async function getCourseProgramById(id: string): Promise<CourseProgram | null> {
   try {
-    // Since programs are nested within courses, we need to fetch all courses
-    // and search for the specific program by ID
-    const response = await fetch(API_BASE_URL, {
-      headers: getApiHeaders(),
-    });
+    const response = await apiClient.get('/courses');
+    const courses = handleApiResponse<any[]>(response);
     
-    if (!response.ok) {
-      throw new Error(`Failed to fetch course programs: ${response.status} ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    
-    if (result.success && result.data && Array.isArray(result.data)) {
-      // Search through all courses to find the program with the matching ID
-      for (const course of result.data) {
-        if (course.programs && Array.isArray(course.programs)) {
-          const program = course.programs.find((p: any) => p._id === id);
-          if (program) {
-            // Transform the program data to match our CourseProgram interface
-            const transformedProgram: CourseProgram = {
-              _id: program._id,
-              slug: program.slug || generateSlug(program.title),
-              title: program.title,
-              parentCourseSlug: course.slug,
-              parentCourseTitle: course.title,
-              heroImage: program.imageUrl || course.heroImage,
-              duration: program.duration,
-              description: program.description,
-              shortDescription: program.shortDescription,
-              courseOverview: program.courseOverview,
-              imageUrl: program.imageUrl,
-              detailsUrl: program.detailsUrl,
-              order: program.order,
-              admissionSteps: program.admissionSteps || [],
-              galleryImages: program.galleryImages || [],
-              programHighlights: program.programHighlights || [],
-              careerPaths: program.careerPaths || [],
-              curriculum: program.curriculum || [],
-              softwareTools: program.softwareTools || [],
-              industryPartners: program.industryPartners || [],
-              testimonials: program.testimonials || [],
-              faqs: program.faqs || [],
-              feeBenefits: program.feeBenefits || [],
-              eligibility: program.eligibility || [],
-              scheduleOptions: program.scheduleOptions || [],
-              ctaTitle: program.ctaTitle || 'Ready to Start Your Journey?',
-              ctaDescription: program.ctaDescription || 'Take the first step towards a successful career.',
-              ctaButtonText: program.ctaButtonText || 'Apply Now',
-              isActive: program.isActive,
-              metaTitle: program.metaTitle,
-              metaDescription: program.metaDescription,
-              metaKeywords: program.metaKeywords,
-              createdAt: program.createdAt,
-              updatedAt: program.updatedAt
-            };
-            return transformedProgram;
-          }
+    // Search through all courses to find the program
+    for (const course of courses) {
+      if (course.programs && Array.isArray(course.programs)) {
+        const program = course.programs.find((p: any) => p._id === id);
+        if (program) {
+          return {
+            ...program,
+            courseId: course._id,
+            courseName: course.name,
+            courseSlug: course.slug
+          };
         }
       }
     }
     
-    console.warn(`Program with ID ${id} not found`);
     return null;
   } catch (error) {
-    console.error('Error fetching course program:', error);
+    console.error('Error fetching course program by ID:', error);
     return null;
   }
 }
 
 export async function getCourseProgramBySlug(parentSlug: string, programSlug: string): Promise<CourseProgram | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/by-slug/${parentSlug}/${programSlug}`, {
+    const response = await fetch(`${API_BASE_URL}/${parentSlug}`, {
       headers: getApiHeaders(),
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch course program: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to fetch course: ${response.status} ${response.statusText}`);
     }
     
     const result = await response.json();
-    return result.data;
+    const course = result.data;
+    
+    if (course && course.programs && Array.isArray(course.programs)) {
+      const program = course.programs.find((p: any) => p.slug === programSlug);
+      if (program) {
+        return {
+          _id: program._id,
+          slug: program.slug,
+          title: program.title,
+          parentCourseSlug: course.slug,
+          parentCourseTitle: course.title,
+          heroImage: program.imageUrl || course.heroImage,
+          duration: program.duration,
+          description: program.description,
+          shortDescription: program.shortDescription,
+          courseOverview: program.courseOverview,
+          imageUrl: program.imageUrl,
+          detailsUrl: program.detailsUrl,
+          order: program.order,
+          admissionSteps: program.admissionSteps || [],
+          galleryImages: program.galleryImages || [],
+          programHighlights: program.programHighlights || [],
+          careerPaths: program.careerPaths || [],
+          curriculum: program.curriculum || [],
+          softwareTools: program.softwareTools || [],
+          industryPartners: program.industryPartners || [],
+          testimonials: program.testimonials || [],
+          faqs: program.faqs || [],
+          feeBenefits: program.feeBenefits || [],
+          feeStructure: program.feeStructure || null,
+          eligibility: program.eligibility || [],
+          scheduleOptions: program.scheduleOptions || [],
+          ctaTitle: program.ctaTitle || 'Ready to Start Your Journey?',
+          ctaDescription: program.ctaDescription || 'Take the first step towards a successful career.',
+          ctaButtonText: program.ctaButtonText || 'Apply Now',
+          isActive: program.isActive,
+          metaTitle: program.metaTitle,
+          metaDescription: program.metaDescription,
+          metaKeywords: program.metaKeywords,
+          createdAt: program.createdAt,
+          updatedAt: program.updatedAt,
+          courseId: course._id,
+          courseName: course.name,
+          courseSlug: course.slug
+        };
+      }
+    }
+    
+    return null;
   } catch (error) {
     console.error('Error fetching course program by slug:', error);
     return null;
   }
 }
 
-export async function createCourseProgram(courseId: string, data: Omit<CourseProgram, '_id' | 'createdAt' | 'updatedAt'>): Promise<CourseProgram> {
+export async function createCourseProgram(courseId: string, data: Omit<CourseProgram, '_id' | 'courseId' | 'courseName' | 'courseSlug'>): Promise<CourseProgram> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${courseId}/programs`, {
-      method: 'POST',
-      headers: getApiHeaders(),
-      body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to create course program: ${response.status} ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.post(`/courses/${courseId}/programs`, data);
+    return handleApiResponse<CourseProgram>(response);
   } catch (error) {
     console.error('Error creating course program:', error);
     throw error;
@@ -372,100 +372,8 @@ export async function createCourseProgram(courseId: string, data: Omit<CoursePro
 
 export async function updateCourseProgram(courseId: string, programId: string, data: Partial<CourseProgram>): Promise<CourseProgram> {
   try {
-    // Since programs are nested within courses, we need to:
-    // 1. Fetch the current course
-    // 2. Update the specific program within the course
-    // 3. Update the course with the modified programs array
-    
-    // First, get the current course
-    const courseResponse = await fetch(`${API_BASE_URL}/${courseId}`, {
-      headers: getApiHeaders(),
-    });
-    
-    if (!courseResponse.ok) {
-      throw new Error(`Failed to fetch course: ${courseResponse.status} ${courseResponse.statusText}`);
-    }
-    
-    const courseResult = await courseResponse.json();
-    const course = courseResult.data;
-    
-    if (!course || !course.programs) {
-      throw new Error('Course or programs not found');
-    }
-    
-    // Find and update the specific program
-    const programIndex = course.programs.findIndex((p: any) => p._id === programId);
-    if (programIndex === -1) {
-      throw new Error('Program not found in course');
-    }
-    
-    // Update the program with new data
-    course.programs[programIndex] = {
-      ...course.programs[programIndex],
-      ...data,
-      // Ensure required fields are preserved
-      _id: programId,
-      title: data.title || course.programs[programIndex].title,
-      slug: data.slug || course.programs[programIndex].slug,
-      imageUrl: data.imageUrl || course.programs[programIndex].imageUrl,
-      detailsUrl: data.detailsUrl || course.programs[programIndex].detailsUrl,
-      order: data.order || course.programs[programIndex].order,
-      isActive: data.isActive !== undefined ? data.isActive : course.programs[programIndex].isActive
-    };
-    
-    // Update the course with the modified programs array
-    const updateResponse = await fetch(`${API_BASE_URL}/${courseId}`, {
-      method: 'PUT',
-      headers: getApiHeaders(),
-      body: JSON.stringify({
-        programs: course.programs
-      })
-    });
-    
-    if (!updateResponse.ok) {
-      throw new Error(`Failed to update course program: ${updateResponse.status} ${updateResponse.statusText}`);
-    }
-    
-    const updateResult = await updateResponse.json();
-    
-    // Return the updated program data
-    const updatedProgram = course.programs[programIndex];
-    return {
-      _id: updatedProgram._id,
-      slug: updatedProgram.slug || generateSlug(updatedProgram.title),
-      title: updatedProgram.title,
-      parentCourseSlug: course.slug,
-      parentCourseTitle: course.title,
-      heroImage: updatedProgram.imageUrl || course.heroImage,
-      duration: updatedProgram.duration,
-      description: updatedProgram.description,
-      shortDescription: updatedProgram.shortDescription,
-      courseOverview: updatedProgram.courseOverview,
-      imageUrl: updatedProgram.imageUrl,
-      detailsUrl: updatedProgram.detailsUrl,
-      order: updatedProgram.order,
-      admissionSteps: updatedProgram.admissionSteps || [],
-      galleryImages: updatedProgram.galleryImages || [],
-      programHighlights: updatedProgram.programHighlights || [],
-      careerPaths: updatedProgram.careerPaths || [],
-      curriculum: updatedProgram.curriculum || [],
-      softwareTools: updatedProgram.softwareTools || [],
-      industryPartners: updatedProgram.industryPartners || [],
-      testimonials: updatedProgram.testimonials || [],
-      faqs: updatedProgram.faqs || [],
-      feeBenefits: updatedProgram.feeBenefits || [],
-      eligibility: updatedProgram.eligibility || [],
-      scheduleOptions: updatedProgram.scheduleOptions || [],
-      ctaTitle: updatedProgram.ctaTitle || 'Ready to Start Your Journey?',
-      ctaDescription: updatedProgram.ctaDescription || 'Take the first step towards a successful career.',
-      ctaButtonText: updatedProgram.ctaButtonText || 'Apply Now',
-      isActive: updatedProgram.isActive,
-      metaTitle: updatedProgram.metaTitle,
-      metaDescription: updatedProgram.metaDescription,
-      metaKeywords: updatedProgram.metaKeywords,
-      createdAt: updatedProgram.createdAt,
-      updatedAt: updatedProgram.updatedAt
-    };
+    const response = await apiClient.put(`/courses/${courseId}/programs/${programId}`, data);
+    return handleApiResponse<CourseProgram>(response);
   } catch (error) {
     console.error('Error updating course program:', error);
     throw error;
@@ -474,18 +382,7 @@ export async function updateCourseProgram(courseId: string, programId: string, d
 
 export async function deleteCourseProgram(courseId: string, programId: string): Promise<void> {
   try {
-    // For now, we'll use a simple approach - in a real implementation,
-    // you'd need to update the course to remove the specific program
-    // This would require fetching the course, removing the program, and updating
-    console.log(`Would delete program ${programId} from course ${courseId}`);
-    
-    // TODO: Implement proper program deletion
-    // This would involve:
-    // 1. Fetch the course
-    // 2. Remove the program from the programs array
-    // 3. Update the course with the new programs array
-    
-    throw new Error('Program deletion not yet implemented - requires course update');
+    await apiClient.delete(`/courses/${courseId}/programs/${programId}`);
   } catch (error) {
     console.error('Error deleting course program:', error);
     throw error;
@@ -507,9 +404,9 @@ export async function getParentCourses(): Promise<{ _id?: string; slug: string; 
     
     if (result.success && result.data && Array.isArray(result.data)) {
       return result.data.map((course: any) => ({
-        _id: course._id,
-        slug: course.slug,
-        title: course.title
+      _id: course._id,
+      slug: course.slug,
+      title: course.title
       }));
     }
     
@@ -561,18 +458,8 @@ export async function addCourseCurriculum(courseId: string, curriculum: Omit<Cur
 
 export async function updateCourseCurriculum(courseId: string, curriculumId: string, data: Partial<CurriculumYear>): Promise<CurriculumYear> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${courseId}/curriculum/${curriculumId}`, {
-      method: 'PUT',
-      headers: getApiHeaders(),
-      body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to update course curriculum: ${response.status} ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.put(`/courses/${courseId}/curriculum/${curriculumId}`, data);
+    return handleApiResponse<CurriculumYear>(response);
   } catch (error) {
     console.error('Error updating course curriculum:', error);
     throw error;

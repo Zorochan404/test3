@@ -36,7 +36,7 @@ export default function GalleryPage() {
     const loadGalleryImages = async () => {
       try {
         const galleryImages = await getGalleryImages()
-        const formattedImages = galleryImages.map((img: APIGalleryImage) => ({
+        const formattedImages = (galleryImages as APIGalleryImage[]).map((img: APIGalleryImage) => ({
           _id: img._id,
           title: img.title,
           imageUrl: img.imageUrl,
@@ -140,11 +140,11 @@ export default function GalleryPage() {
       const addedImage = await addGalleryImage(imageData)
 
       const formattedImage: GalleryImage = {
-        _id: addedImage._id,
-        title: addedImage.title,
-        imageUrl: addedImage.imageUrl,
-        category: addedImage.category,
-        order: addedImage.order
+        _id: (addedImage as APIGalleryImage)._id,
+        title: (addedImage as APIGalleryImage).title,
+        imageUrl: (addedImage as APIGalleryImage).imageUrl,
+        category: (addedImage as APIGalleryImage).category,
+        order: (addedImage as APIGalleryImage).order
       }
 
       setImages(prev => [...prev, formattedImage])

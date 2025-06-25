@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import { uploadToCloudinary } from '@/utils/cloudinary'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
-import { getContentByType, addOrUpdateContent, type AboutUsContent } from '../apis'
+import { getContentByType, addOrUpdateContent, createContentSection, updateContentSection, type AboutUsContent } from '../apis'
 
 type VisionSection = {
   title: string;
@@ -105,7 +105,11 @@ export default function VisionEditPage() {
 
       console.log('Vision Form Data:', contentData)
 
-      await addOrUpdateContent(contentData)
+      if (contentId) {
+        await updateContentSection(contentId, contentData)
+      } else {
+        await createContentSection(contentData)
+      }
       toast.success('Vision section updated successfully!')
       
       // Reload the content to get the latest data

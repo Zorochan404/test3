@@ -41,6 +41,8 @@ export interface AboutUsContent {
   isActive: boolean;
 }
 
+import { apiClient, handleApiResponse } from '@/lib/api-config';
+
 // API Base URL
 const API_BASE_URL = 'https://backend-rakj.onrender.com/api/v1/about-us';
 
@@ -112,12 +114,8 @@ export async function deleteHeroImage(id: string): Promise<void> {
 // Content Sections API
 export async function getContentSections(): Promise<AboutUsContent[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/content/getcontentsections`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch content sections');
-    }
-    const result = await response.json();
-    return result.data || [];
+    const response = await apiClient.get('/about-us/content/getcontentsections');
+    return handleApiResponse<AboutUsContent[]>(response);
   } catch (error) {
     console.error('Error fetching content sections:', error);
     throw error;
@@ -126,35 +124,42 @@ export async function getContentSections(): Promise<AboutUsContent[]> {
 
 export async function getContentByType(sectionType: string): Promise<AboutUsContent | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/content/getcontentbytype/${sectionType}`);
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      throw new Error('Failed to fetch content section');
+    const response = await apiClient.get(`/about-us/content/getcontentbytype/${sectionType}`);
+    return handleApiResponse<AboutUsContent>(response);
+  } catch (error: any) {
+    if (error.status === 404) {
+      return null;
     }
-    const result = await response.json();
-    return result.data;
-  } catch (error) {
     console.error('Error fetching content section:', error);
     throw error;
   }
 }
 
-export async function addOrUpdateContent(data: Omit<AboutUsContent, '_id'>): Promise<AboutUsContent> {
+export async function createContentSection(data: Omit<AboutUsContent, '_id' | 'createdAt' | 'updatedAt'>): Promise<AboutUsContent> {
   try {
-    const response = await fetch(`${API_BASE_URL}/content/addorupdatecontent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to save content section');
-    }
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.post('/about-us/content/addcontentsection', data);
+    return handleApiResponse<AboutUsContent>(response);
   } catch (error) {
-    console.error('Error saving content section:', error);
+    console.error('Error creating content section:', error);
+    throw error;
+  }
+}
+
+export async function updateContentSection(id: string, data: Partial<AboutUsContent>): Promise<AboutUsContent> {
+  try {
+    const response = await apiClient.put(`/about-us/content/updatecontentsection/${id}`, data);
+    return handleApiResponse<AboutUsContent>(response);
+  } catch (error) {
+    console.error('Error updating content section:', error);
+    throw error;
+  }
+}
+
+export async function deleteContentSection(id: string): Promise<void> {
+  try {
+    await apiClient.delete(`/about-us/content/deletecontentsection/${id}`);
+  } catch (error) {
+    console.error('Error deleting content section:', error);
     throw error;
   }
 }
@@ -162,48 +167,41 @@ export async function addOrUpdateContent(data: Omit<AboutUsContent, '_id'>): Pro
 // Statistics API
 export async function getStatistics(): Promise<AboutUsStatistic[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/statistics/getstatistics`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch statistics');
-    }
-    const result = await response.json();
-    return result.data || [];
+    const response = await apiClient.get('/about-us/statistics/getstatistics');
+    return handleApiResponse<AboutUsStatistic[]>(response);
   } catch (error) {
     console.error('Error fetching statistics:', error);
     throw error;
   }
 }
 
-export async function addStatistic(data: Omit<AboutUsStatistic, '_id'>): Promise<AboutUsStatistic> {
+export async function getStatisticById(id: string): Promise<AboutUsStatistic | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/statistics/addstatistic`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to add statistic');
+    const response = await apiClient.get(`/about-us/statistics/getstatisticbyid/${id}`);
+    return handleApiResponse<AboutUsStatistic>(response);
+  } catch (error: any) {
+    if (error.status === 404) {
+      return null;
     }
-    const result = await response.json();
-    return result.data;
+    console.error('Error fetching statistic:', error);
+    throw error;
+  }
+}
+
+export async function createStatistic(data: Omit<AboutUsStatistic, '_id' | 'createdAt' | 'updatedAt'>): Promise<AboutUsStatistic> {
+  try {
+    const response = await apiClient.post('/about-us/statistics/addstatistic', data);
+    return handleApiResponse<AboutUsStatistic>(response);
   } catch (error) {
-    console.error('Error adding statistic:', error);
+    console.error('Error creating statistic:', error);
     throw error;
   }
 }
 
 export async function updateStatistic(id: string, data: Partial<AboutUsStatistic>): Promise<AboutUsStatistic> {
   try {
-    const response = await fetch(`${API_BASE_URL}/statistics/updatestatistic/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to update statistic');
-    }
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.put(`/about-us/statistics/updatestatistic/${id}`, data);
+    return handleApiResponse<AboutUsStatistic>(response);
   } catch (error) {
     console.error('Error updating statistic:', error);
     throw error;
@@ -212,12 +210,7 @@ export async function updateStatistic(id: string, data: Partial<AboutUsStatistic
 
 export async function deleteStatistic(id: string): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/statistics/deletestatistic/${id}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete statistic');
-    }
+    await apiClient.delete(`/about-us/statistics/deletestatistic/${id}`);
   } catch (error) {
     console.error('Error deleting statistic:', error);
     throw error;
@@ -227,48 +220,41 @@ export async function deleteStatistic(id: string): Promise<void> {
 // Core Values API
 export async function getCoreValues(): Promise<AboutUsCoreValue[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/core-values/getcorevalues`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch core values');
-    }
-    const result = await response.json();
-    return result.data || [];
+    const response = await apiClient.get('/about-us/core-values/getcorevalues');
+    return handleApiResponse<AboutUsCoreValue[]>(response);
   } catch (error) {
     console.error('Error fetching core values:', error);
     throw error;
   }
 }
 
-export async function addCoreValue(data: Omit<AboutUsCoreValue, '_id'>): Promise<AboutUsCoreValue> {
+export async function getCoreValueById(id: string): Promise<AboutUsCoreValue | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/core-values/addcorevalue`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to add core value');
+    const response = await apiClient.get(`/about-us/core-values/getcorevaluebyid/${id}`);
+    return handleApiResponse<AboutUsCoreValue>(response);
+  } catch (error: any) {
+    if (error.status === 404) {
+      return null;
     }
-    const result = await response.json();
-    return result.data;
+    console.error('Error fetching core value:', error);
+    throw error;
+  }
+}
+
+export async function createCoreValue(data: Omit<AboutUsCoreValue, '_id' | 'createdAt' | 'updatedAt'>): Promise<AboutUsCoreValue> {
+  try {
+    const response = await apiClient.post('/about-us/core-values/addcorevalue', data);
+    return handleApiResponse<AboutUsCoreValue>(response);
   } catch (error) {
-    console.error('Error adding core value:', error);
+    console.error('Error creating core value:', error);
     throw error;
   }
 }
 
 export async function updateCoreValue(id: string, data: Partial<AboutUsCoreValue>): Promise<AboutUsCoreValue> {
   try {
-    const response = await fetch(`${API_BASE_URL}/core-values/updatecorevalue/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to update core value');
-    }
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.put(`/about-us/core-values/updatecorevalue/${id}`, data);
+    return handleApiResponse<AboutUsCoreValue>(response);
   } catch (error) {
     console.error('Error updating core value:', error);
     throw error;
@@ -277,12 +263,7 @@ export async function updateCoreValue(id: string, data: Partial<AboutUsCoreValue
 
 export async function deleteCoreValue(id: string): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/core-values/deletecorevalue/${id}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete core value');
-    }
+    await apiClient.delete(`/about-us/core-values/deletecorevalue/${id}`);
   } catch (error) {
     console.error('Error deleting core value:', error);
     throw error;
@@ -292,48 +273,41 @@ export async function deleteCoreValue(id: string): Promise<void> {
 // Campus Images API
 export async function getCampusImages(): Promise<AboutUsCampusImage[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/campus-images/getcampusimages`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch campus images');
-    }
-    const result = await response.json();
-    return result.data || [];
+    const response = await apiClient.get('/about-us/campus-images/getcampusimages');
+    return handleApiResponse<AboutUsCampusImage[]>(response);
   } catch (error) {
     console.error('Error fetching campus images:', error);
     throw error;
   }
 }
 
-export async function addCampusImage(data: Omit<AboutUsCampusImage, '_id'>): Promise<AboutUsCampusImage> {
+export async function getCampusImageById(id: string): Promise<AboutUsCampusImage | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/campus-images/addcampusimage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to add campus image');
+    const response = await apiClient.get(`/about-us/campus-images/getcampusimagebyid/${id}`);
+    return handleApiResponse<AboutUsCampusImage>(response);
+  } catch (error: any) {
+    if (error.status === 404) {
+      return null;
     }
-    const result = await response.json();
-    return result.data;
+    console.error('Error fetching campus image:', error);
+    throw error;
+  }
+}
+
+export async function createCampusImage(data: Omit<AboutUsCampusImage, '_id' | 'createdAt' | 'updatedAt'>): Promise<AboutUsCampusImage> {
+  try {
+    const response = await apiClient.post('/about-us/campus-images/addcampusimage', data);
+    return handleApiResponse<AboutUsCampusImage>(response);
   } catch (error) {
-    console.error('Error adding campus image:', error);
+    console.error('Error creating campus image:', error);
     throw error;
   }
 }
 
 export async function updateCampusImage(id: string, data: Partial<AboutUsCampusImage>): Promise<AboutUsCampusImage> {
   try {
-    const response = await fetch(`${API_BASE_URL}/campus-images/updatecampusimage/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to update campus image');
-    }
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.put(`/about-us/campus-images/updatecampusimage/${id}`, data);
+    return handleApiResponse<AboutUsCampusImage>(response);
   } catch (error) {
     console.error('Error updating campus image:', error);
     throw error;
@@ -342,14 +316,15 @@ export async function updateCampusImage(id: string, data: Partial<AboutUsCampusI
 
 export async function deleteCampusImage(id: string): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/campus-images/deletecampusimage/${id}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete campus image');
-    }
+    await apiClient.delete(`/about-us/campus-images/deletecampusimage/${id}`);
   } catch (error) {
     console.error('Error deleting campus image:', error);
     throw error;
   }
 }
+
+// Alias exports for backward compatibility
+export const addCampusImage = createCampusImage;
+export const addCoreValue = createCoreValue;
+export const addStatistic = createStatistic;
+export const addOrUpdateContent = updateContentSection;

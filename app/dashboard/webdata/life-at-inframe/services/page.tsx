@@ -55,8 +55,8 @@ export default function StudentServicesPage() {
       try {
         setInitialLoading(true)
         const data = await getStudentServices()
-        setServices(data || [])
-        setNewService(prev => ({ ...prev, order: (data?.length || 0) + 1 }))
+        setServices((data as StudentService[]) || [])
+        setNewService(prev => ({ ...prev, order: ((data as StudentService[])?.length || 0) + 1 }))
       } catch (error) {
         console.error('Error fetching services:', error)
         toast.error('Failed to load services')
@@ -79,7 +79,7 @@ export default function StudentServicesPage() {
     setLoading(true)
     try {
       const addedService = await addStudentService(newService)
-      setServices(prev => [...prev, addedService])
+      setServices(prev => [...prev, addedService as StudentService])
       setNewService({
         title: '',
         description: '',
@@ -112,7 +112,7 @@ export default function StudentServicesPage() {
     try {
       const updatedService = await updateStudentService(editingService._id, editingService)
       setServices(prev => prev.map(service =>
-        service._id === editingService._id ? updatedService : service
+        service._id === editingService._id ? (updatedService as StudentService) : service
       ))
       setEditingService(null)
       toast.success('Service updated successfully')

@@ -31,7 +31,7 @@ export default function EditPage() {
     const fetchMembership = async () => {
       try {
         const data = await getMembershipById(id)
-        setMembership(data)
+        setMembership(data as Membership | null)
         setLoading(false)
       } catch (error) {
         console.error('Error fetching membership:', error)

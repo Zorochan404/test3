@@ -1,3 +1,5 @@
+import { apiClient, handleApiResponse } from '@/lib/api-config';
+
 export type LifeAtInframeSection = {
   _id?: string;
   sectionType: 'hero' | 'welcome' | 'services' | 'clubs' | 'sports' | 'events' | 'gallery' | 'tour';
@@ -16,8 +18,6 @@ export type StudentService = {
   icon?: string;
   order: number;
 };
-
-
 
 export type CampusEvent = {
   _id?: string;
@@ -55,348 +55,253 @@ export type StudentClub = {
 
 // Life at Inframe Sections API
 export async function getLifeAtInframeSections() {
-    const response = await fetch('https://backend-rakj.onrender.com/api/v1/lifeatinframesection/getlifeatinframesections');
-
-    if (!response.ok) {
-        throw new Error(`Failed to fetch sections: ${response.status} ${response.statusText}`);
-    }
-
-    const sections = await response.json();
-    return sections.data;
+  try {
+    const response = await apiClient.get('/lifeatinframesection/getlifeatinframesections');
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error fetching life at inframe sections:', error);
+    throw error;
+  }
 }
 
 export async function getLifeAtInframeSectionById(id: string) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/lifeatinframesection/getlifeatinframesectionbyid/${id}`);
-
-    if (!response.ok) {
-        throw new Error(`Failed to fetch section: ${response.status} ${response.statusText}`);
+  try {
+    const response = await apiClient.get(`/lifeatinframesection/getlifeatinframesectionbyid/${id}`);
+    return handleApiResponse(response);
+  } catch (error: any) {
+    if (error.status === 404) {
+      return null;
     }
-
-    const section = await response.json();
-    return section.data;
+    console.error('Error fetching life at inframe section:', error);
+    throw error;
+  }
 }
 
 export async function updateLifeAtInframeSection(id: string, data: LifeAtInframeSection) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/lifeatinframesection/updatelifeatinframesection/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to update section: ${response.status} ${response.statusText}. ${errorText}`);
-    }
-
-    const section = await response.json();
-    return section.data;
+  try {
+    const response = await apiClient.put(`/lifeatinframesection/updatelifeatinframesection/${id}`, data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error updating life at inframe section:', error);
+    throw error;
+  }
 }
 
 export async function addLifeAtInframeSection(data: LifeAtInframeSection) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/lifeatinframesection/addlifeatinframesection`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to add section: ${response.status} ${response.statusText}. ${errorText}`);
-    }
-
-    const section = await response.json();
-    return section.data;
+  try {
+    const response = await apiClient.post('/lifeatinframesection/addlifeatinframesection', data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error creating life at inframe section:', error);
+    throw error;
+  }
 }
 
 export async function deleteLifeAtInframeSection(id: string) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/lifeatinframesection/deletelifeatinframesection/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-    const section = await response.json();
-    return section.data;
+  try {
+    await apiClient.delete(`/lifeatinframesection/deletelifeatinframesection/${id}`);
+  } catch (error) {
+    console.error('Error deleting life at inframe section:', error);
+    throw error;
+  }
 }
 
 // Student Services API
 export async function getStudentServices() {
-    const response = await fetch('https://backend-rakj.onrender.com/api/v1/studentservice/getstudentservices');
-    const services = await response.json();
-    return services.data;
+  try {
+    const response = await apiClient.get('/studentservice/getstudentservices');
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error fetching student services:', error);
+    throw error;
+  }
 }
 
 export async function addStudentService(data: StudentService) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/studentservice/addstudentservice`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Failed to add service: ${response.statusText}`);
-    }
-    
-    const service = await response.json();
-    return service.data;
+  try {
+    const response = await apiClient.post('/studentservice/addstudentservice', data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error creating student service:', error);
+    throw error;
+  }
 }
 
 export async function updateStudentService(id: string, data: StudentService) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/studentservice/updatestudentservice/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Failed to update service: ${response.statusText}`);
-    }
-    
-    const service = await response.json();
-    return service.data;
+  try {
+    const response = await apiClient.put(`/studentservice/updatestudentservice/${id}`, data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error updating student service:', error);
+    throw error;
+  }
 }
 
 export async function deleteStudentService(id: string) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/studentservice/deletestudentservice/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-    const service = await response.json();
-    return service.data;
+  try {
+    await apiClient.delete(`/studentservice/deletestudentservice/${id}`);
+  } catch (error) {
+    console.error('Error deleting student service:', error);
+    throw error;
+  }
 }
 
 // Student Clubs API
 export async function getStudentClubs() {
-    const response = await fetch('https://backend-rakj.onrender.com/api/v1/studentclub/getstudentclubs');
-
-    if (!response.ok) {
-        throw new Error(`Failed to fetch clubs: ${response.status} ${response.statusText}`);
-    }
-
-    const clubs = await response.json();
-    return clubs.data;
+  try {
+    const response = await apiClient.get('/studentclub/getstudentclubs');
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error fetching student clubs:', error);
+    throw error;
+  }
 }
 
 export async function addStudentClub(data: StudentClub) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/studentclub/addstudentclub`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to add club: ${response.status} ${response.statusText}. ${errorText}`);
-    }
-
-    const club = await response.json();
-    return club.data;
+  try {
+    const response = await apiClient.post('/studentclub/addstudentclub', data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error creating student club:', error);
+    throw error;
+  }
 }
 
 export async function updateStudentClub(id: string, data: StudentClub) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/studentclub/updatestudentclub/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to update club: ${response.status} ${response.statusText}. ${errorText}`);
-    }
-
-    const club = await response.json();
-    return club.data;
+  try {
+    const response = await apiClient.put(`/studentclub/updatestudentclub/${id}`, data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error updating student club:', error);
+    throw error;
+  }
 }
 
 export async function deleteStudentClub(id: string) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/studentclub/deletestudentclub/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to delete club: ${response.status} ${response.statusText}. ${errorText}`);
-    }
-
-    const club = await response.json();
-    return club.data;
+  try {
+    await apiClient.delete(`/studentclub/deletestudentclub/${id}`);
+  } catch (error) {
+    console.error('Error deleting student club:', error);
+    throw error;
+  }
 }
 
 // Campus Events API
 export async function getCampusEvents() {
-    const response = await fetch('https://backend-rakj.onrender.com/api/v1/campusevent/getcampusevents');
-    const events = await response.json();
-    return events.data;
+  try {
+    const response = await apiClient.get('/campusevent/getcampusevents');
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error fetching campus events:', error);
+    throw error;
+  }
 }
 
 export async function addCampusEvent(data: CampusEvent) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/campusevent/addcampusevent`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Failed to add event: ${response.statusText}`);
-    }
-    
-    const event = await response.json();
-    return event.data;
+  try {
+    const response = await apiClient.post('/campusevent/addcampusevent', data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error creating campus event:', error);
+    throw error;
+  }
 }
 
 export async function updateCampusEvent(id: string, data: CampusEvent) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/campusevent/updatecampusevent/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Failed to update event: ${response.statusText}`);
-    }
-    
-    const event = await response.json();
-    return event.data;
+  try {
+    const response = await apiClient.put(`/campusevent/updatecampusevent/${id}`, data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error updating campus event:', error);
+    throw error;
+  }
 }
 
 export async function deleteCampusEvent(id: string) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/campusevent/deletecampusevent/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-    const event = await response.json();
-    return event.data;
+  try {
+    await apiClient.delete(`/campusevent/deletecampusevent/${id}`);
+  } catch (error) {
+    console.error('Error deleting campus event:', error);
+    throw error;
+  }
 }
 
-// Gallery API
+// Gallery Images API
 export async function getGalleryImages() {
-    const response = await fetch('https://backend-rakj.onrender.com/api/v1/galleryimage/getgalleryimages');
-    const images = await response.json();
-    return images.data;
+  try {
+    const response = await apiClient.get('/galleryimage/getgalleryimages');
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error fetching gallery images:', error);
+    throw error;
+  }
 }
 
 export async function addGalleryImage(data: GalleryImage) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/galleryimage/addgalleryimage`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Failed to add gallery image: ${response.statusText}`);
-    }
-    
-    const image = await response.json();
-    return image.data;
+  try {
+    const response = await apiClient.post('/galleryimage/addgalleryimage', data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error creating gallery image:', error);
+    throw error;
+  }
 }
 
 export async function updateGalleryImage(id: string, data: GalleryImage) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/galleryimage/updategalleryimage/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Failed to update gallery image: ${response.statusText}`);
-    }
-    
-    const image = await response.json();
-    return image.data;
+  try {
+    const response = await apiClient.put(`/galleryimage/updategalleryimage/${id}`, data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error updating gallery image:', error);
+    throw error;
+  }
 }
 
 export async function deleteGalleryImage(id: string) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/galleryimage/deletegalleryimage/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-    const image = await response.json();
-    return image.data;
+  try {
+    await apiClient.delete(`/galleryimage/deletegalleryimage/${id}`);
+  } catch (error) {
+    console.error('Error deleting gallery image:', error);
+    throw error;
+  }
 }
 
 // Sports Facilities API
 export async function getSportsFacilities() {
-    const response = await fetch('https://backend-rakj.onrender.com/api/v1/sportsfacility/getsportsfacilities');
-    const facilities = await response.json();
-    return facilities.data;
+  try {
+    const response = await apiClient.get('/sportsfacility/getsportsfacilities');
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error fetching sports facilities:', error);
+    throw error;
+  }
 }
 
 export async function addSportsFacility(data: SportsFacility) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/sportsfacility/addsportsfacility`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-
-    if (!response.ok) {
-        throw new Error(`Failed to add sports facility: ${response.statusText}`);
-    }
-
-    const facility = await response.json();
-    return facility.data;
+  try {
+    const response = await apiClient.post('/sportsfacility/addsportsfacility', data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error creating sports facility:', error);
+    throw error;
+  }
 }
 
 export async function updateSportsFacility(id: string, data: SportsFacility) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/sportsfacility/updatesportsfacility/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-
-    if (!response.ok) {
-        throw new Error(`Failed to update sports facility: ${response.statusText}`);
-    }
-
-    const facility = await response.json();
-    return facility.data;
+  try {
+    const response = await apiClient.put(`/sportsfacility/updatesportsfacility/${id}`, data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error updating sports facility:', error);
+    throw error;
+  }
 }
 
 export async function deleteSportsFacility(id: string) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/sportsfacility/deletesportsfacility/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-
-    if (!response.ok) {
-        throw new Error(`Failed to delete sports facility: ${response.statusText}`);
-    }
-
-    const facility = await response.json();
-    return facility.data;
+  try {
+    await apiClient.delete(`/sportsfacility/deletesportsfacility/${id}`);
+  } catch (error) {
+    console.error('Error deleting sports facility:', error);
+    throw error;
+  }
 }

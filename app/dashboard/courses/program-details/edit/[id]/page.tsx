@@ -22,7 +22,10 @@ import {
   type CurriculumYear,
   type SoftwareTool,
   type CareerPath,
-  type ProgramHighlight
+  type ProgramHighlight,
+  type FeeStructure,
+  type EMIOption,
+  type CouponCode
 } from '../../apis'
 import { Badge } from '@/components/ui/badge'
 
@@ -106,6 +109,47 @@ export default function EditCourseProgramDetailsPage() {
   })
   const [editingHighlightId, setEditingHighlightId] = useState<string | null>(null)
 
+  // Fee Structure Form States
+  const [feeStructureForm, setFeeStructureForm] = useState({
+    totalFee: 0,
+    monthlyFee: 0,
+    yearlyFee: 0,
+    processingFee: 0,
+    registrationFee: 0,
+    discountPercentage: 0,
+    paymentTerms: '',
+    refundPolicy: '',
+    isActive: true,
+    order: 1
+  })
+
+  const [emiForm, setEmiForm] = useState({
+    months: 12,
+    monthlyAmount: 0,
+    totalAmount: 0,
+    processingFee: 0,
+    interestRate: 0,
+    isActive: true,
+    order: 1
+  })
+  const [editingEmiId, setEditingEmiId] = useState<string | null>(null)
+
+  const [couponForm, setCouponForm] = useState({
+    code: '',
+    discountType: 'percentage' as 'percentage' | 'fixed',
+    discountValue: 0,
+    minimumAmount: 0,
+    maximumDiscount: 0,
+    validFrom: new Date().toISOString().split('T')[0],
+    validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    usageLimit: 100,
+    usedCount: 0,
+    isActive: true,
+    description: '',
+    order: 1
+  })
+  const [editingCouponId, setEditingCouponId] = useState<string | null>(null)
+
   useEffect(() => {
     if (programId) {
       loadProgram()
@@ -146,6 +190,22 @@ export default function EditCourseProgramDetailsPage() {
         metaDescription: programData.metaDescription || '',
         metaKeywords: programData.metaKeywords || ''
       })
+
+      // Initialize fee structure form data
+      if (programData.feeStructure) {
+        setFeeStructureForm({
+          totalFee: programData.feeStructure.totalFee || 0,
+          monthlyFee: programData.feeStructure.monthlyFee || 0,
+          yearlyFee: programData.feeStructure.yearlyFee || 0,
+          processingFee: programData.feeStructure.processingFee || 0,
+          registrationFee: programData.feeStructure.registrationFee || 0,
+          discountPercentage: programData.feeStructure.discountPercentage || 0,
+          paymentTerms: programData.feeStructure.paymentTerms || '',
+          refundPolicy: programData.feeStructure.refundPolicy || '',
+          isActive: programData.feeStructure.isActive,
+          order: programData.feeStructure.order || 1
+        })
+      }
       console.log('Form data set successfully')
     } catch (error) {
       console.error('Error loading program:', error)
@@ -1007,13 +1067,436 @@ export default function EditCourseProgramDetailsPage() {
     }))
   }
 
+  // Fee Structure Functions
+  const handleUpdateFeeStructure = async () => {
+    try {
+      const feeStructure: FeeStructure = {
+        totalFee: feeStructureForm.totalFee,
+        monthlyFee: feeStructureForm.monthlyFee,
+        yearlyFee: feeStructureForm.yearlyFee,
+        processingFee: feeStructureForm.processingFee,
+        registrationFee: feeStructureForm.registrationFee,
+        discountPercentage: feeStructureForm.discountPercentage,
+        paymentTerms: feeStructureForm.paymentTerms,
+        refundPolicy: feeStructureForm.refundPolicy,
+        isActive: feeStructureForm.isActive,
+        order: feeStructureForm.order,
+        emiOptions: program?.feeStructure?.emiOptions || [],
+        couponCodes: program?.feeStructure?.couponCodes || []
+      }
+
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        feeStructure: feeStructure
+      })
+
+      toast.success('Fee structure updated successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error updating fee structure:', error)
+      toast.error('Failed to update fee structure')
+    }
+  }
+
+  const handleAddEMI = async () => {
+    if (!emiForm.months || !emiForm.monthlyAmount || !emiForm.totalAmount) {
+      toast.error('Months, monthly amount, and total amount are required')
+      return
+    }
+
+    try {
+      const newEMI: EMIOption = {
+        months: emiForm.months,
+        monthlyAmount: emiForm.monthlyAmount,
+        totalAmount: emiForm.totalAmount,
+        processingFee: emiForm.processingFee,
+        interestRate: emiForm.interestRate,
+        isActive: emiForm.isActive,
+        order: emiForm.order
+      }
+
+      const currentFeeStructure = program?.feeStructure || {
+        totalFee: 0,
+        emiOptions: [],
+        couponCodes: [],
+        isActive: true,
+        order: 1
+      }
+
+      const updatedEMIOptions = [...currentFeeStructure.emiOptions, newEMI]
+      
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        feeStructure: {
+          ...currentFeeStructure,
+          emiOptions: updatedEMIOptions
+        }
+      })
+
+      // Reset form
+      setEmiForm({
+        months: 12,
+        monthlyAmount: 0,
+        totalAmount: 0,
+        processingFee: 0,
+        interestRate: 0,
+        isActive: true,
+        order: 1
+      })
+
+      toast.success('EMI option added successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error adding EMI option:', error)
+      toast.error('Failed to add EMI option')
+    }
+  }
+
+  const handleEditEMI = (index: number) => {
+    const emi = program?.feeStructure?.emiOptions?.[index]
+    if (emi) {
+      setEmiForm({
+        months: emi.months,
+        monthlyAmount: emi.monthlyAmount,
+        totalAmount: emi.totalAmount,
+        processingFee: emi.processingFee || 0,
+        interestRate: emi.interestRate || 0,
+        isActive: emi.isActive,
+        order: emi.order
+      })
+      setEditingEmiId(emi._id || `temp-${index}`)
+    }
+  }
+
+  const handleUpdateEMI = async () => {
+    if (!editingEmiId) return
+
+    try {
+      const currentFeeStructure = program?.feeStructure || {
+        totalFee: 0,
+        emiOptions: [],
+        couponCodes: [],
+        isActive: true,
+        order: 1
+      }
+
+      const updatedEMIOptions = currentFeeStructure.emiOptions.map((emi, index) => {
+        if (emi._id === editingEmiId || `temp-${index}` === editingEmiId) {
+          return {
+            ...emi,
+            months: emiForm.months,
+            monthlyAmount: emiForm.monthlyAmount,
+            totalAmount: emiForm.totalAmount,
+            processingFee: emiForm.processingFee,
+            interestRate: emiForm.interestRate,
+            isActive: emiForm.isActive,
+            order: emiForm.order
+          }
+        }
+        return emi
+      })
+
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        feeStructure: {
+          ...currentFeeStructure,
+          emiOptions: updatedEMIOptions
+        }
+      })
+
+      // Reset form
+      setEmiForm({
+        months: 12,
+        monthlyAmount: 0,
+        totalAmount: 0,
+        processingFee: 0,
+        interestRate: 0,
+        isActive: true,
+        order: 1
+      })
+      setEditingEmiId(null)
+
+      toast.success('EMI option updated successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error updating EMI option:', error)
+      toast.error('Failed to update EMI option')
+    }
+  }
+
+  const handleDeleteEMI = async (index: number) => {
+    try {
+      const currentFeeStructure = program?.feeStructure || {
+        totalFee: 0,
+        emiOptions: [],
+        couponCodes: [],
+        isActive: true,
+        order: 1
+      }
+
+      const updatedEMIOptions = currentFeeStructure.emiOptions.filter((_, i) => i !== index)
+
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        feeStructure: {
+          ...currentFeeStructure,
+          emiOptions: updatedEMIOptions
+        }
+      })
+
+      toast.success('EMI option deleted successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error deleting EMI option:', error)
+      toast.error('Failed to delete EMI option')
+    }
+  }
+
+  const handleCancelEMIEdit = () => {
+    setEmiForm({
+      months: 12,
+      monthlyAmount: 0,
+      totalAmount: 0,
+      processingFee: 0,
+      interestRate: 0,
+      isActive: true,
+      order: 1
+    })
+    setEditingEmiId(null)
+  }
+
+  const handleAddCoupon = async () => {
+    if (!couponForm.code.trim() || !couponForm.discountValue) {
+      toast.error('Coupon code and discount value are required')
+      return
+    }
+
+    try {
+      const newCoupon: CouponCode = {
+        code: couponForm.code.trim().toUpperCase(),
+        discountType: couponForm.discountType,
+        discountValue: couponForm.discountValue,
+        minimumAmount: couponForm.minimumAmount,
+        maximumDiscount: couponForm.maximumDiscount,
+        validFrom: new Date(couponForm.validFrom).toISOString(),
+        validUntil: new Date(couponForm.validUntil).toISOString(),
+        usageLimit: couponForm.usageLimit,
+        usedCount: couponForm.usedCount,
+        isActive: couponForm.isActive,
+        description: couponForm.description,
+        order: couponForm.order
+      }
+
+      const currentFeeStructure = program?.feeStructure || {
+        totalFee: 0,
+        emiOptions: [],
+        couponCodes: [],
+        isActive: true,
+        order: 1
+      }
+
+      const updatedCouponCodes = [...currentFeeStructure.couponCodes, newCoupon]
+      
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        feeStructure: {
+          ...currentFeeStructure,
+          couponCodes: updatedCouponCodes
+        }
+      })
+
+      // Reset form
+      setCouponForm({
+        code: '',
+        discountType: 'percentage',
+        discountValue: 0,
+        minimumAmount: 0,
+        maximumDiscount: 0,
+        validFrom: new Date().toISOString().split('T')[0],
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        usageLimit: 100,
+        usedCount: 0,
+        isActive: true,
+        description: '',
+        order: 1
+      })
+
+      toast.success('Coupon code added successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error adding coupon code:', error)
+      toast.error('Failed to add coupon code')
+    }
+  }
+
+  const handleEditCoupon = (index: number) => {
+    const coupon = program?.feeStructure?.couponCodes?.[index]
+    if (coupon) {
+      setCouponForm({
+        code: coupon.code,
+        discountType: coupon.discountType,
+        discountValue: coupon.discountValue,
+        minimumAmount: coupon.minimumAmount || 0,
+        maximumDiscount: coupon.maximumDiscount || 0,
+        validFrom: new Date(coupon.validFrom).toISOString().split('T')[0],
+        validUntil: new Date(coupon.validUntil).toISOString().split('T')[0],
+        usageLimit: coupon.usageLimit || 100,
+        usedCount: coupon.usedCount,
+        isActive: coupon.isActive,
+        description: coupon.description || '',
+        order: coupon.order
+      })
+      setEditingCouponId(coupon._id || `temp-${index}`)
+    }
+  }
+
+  const handleUpdateCoupon = async () => {
+    if (!editingCouponId) return
+
+    try {
+      const currentFeeStructure = program?.feeStructure || {
+        totalFee: 0,
+        emiOptions: [],
+        couponCodes: [],
+        isActive: true,
+        order: 1
+      }
+
+      const updatedCouponCodes = currentFeeStructure.couponCodes.map((coupon, index) => {
+        if (coupon._id === editingCouponId || `temp-${index}` === editingCouponId) {
+          return {
+            ...coupon,
+            code: couponForm.code.trim().toUpperCase(),
+            discountType: couponForm.discountType,
+            discountValue: couponForm.discountValue,
+            minimumAmount: couponForm.minimumAmount,
+            maximumDiscount: couponForm.maximumDiscount,
+            validFrom: new Date(couponForm.validFrom).toISOString(),
+            validUntil: new Date(couponForm.validUntil).toISOString(),
+            usageLimit: couponForm.usageLimit,
+            usedCount: couponForm.usedCount,
+            isActive: couponForm.isActive,
+            description: couponForm.description,
+            order: couponForm.order
+          }
+        }
+        return coupon
+      })
+
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        feeStructure: {
+          ...currentFeeStructure,
+          couponCodes: updatedCouponCodes
+        }
+      })
+
+      // Reset form
+      setCouponForm({
+        code: '',
+        discountType: 'percentage',
+        discountValue: 0,
+        minimumAmount: 0,
+        maximumDiscount: 0,
+        validFrom: new Date().toISOString().split('T')[0],
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        usageLimit: 100,
+        usedCount: 0,
+        isActive: true,
+        description: '',
+        order: 1
+      })
+      setEditingCouponId(null)
+
+      toast.success('Coupon code updated successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error updating coupon code:', error)
+      toast.error('Failed to update coupon code')
+    }
+  }
+
+  const handleDeleteCoupon = async (index: number) => {
+    try {
+      const currentFeeStructure = program?.feeStructure || {
+        totalFee: 0,
+        emiOptions: [],
+        couponCodes: [],
+        isActive: true,
+        order: 1
+      }
+
+      const updatedCouponCodes = currentFeeStructure.couponCodes.filter((_, i) => i !== index)
+
+      const courseId = await getCourseIdBySlug(formData.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await updateCourseProgram(courseId, programId, {
+        feeStructure: {
+          ...currentFeeStructure,
+          couponCodes: updatedCouponCodes
+        }
+      })
+
+      toast.success('Coupon code deleted successfully!')
+      await loadProgram()
+    } catch (error) {
+      console.error('Error deleting coupon code:', error)
+      toast.error('Failed to delete coupon code')
+    }
+  }
+
+  const handleCancelCouponEdit = () => {
+    setCouponForm({
+      code: '',
+      discountType: 'percentage',
+      discountValue: 0,
+      minimumAmount: 0,
+      maximumDiscount: 0,
+      validFrom: new Date().toISOString().split('T')[0],
+      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      usageLimit: 100,
+      usedCount: 0,
+      isActive: true,
+      description: '',
+      order: 1
+    })
+    setEditingCouponId(null)
+  }
+
   if (loading) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <div className="text-lg">Loading program details...</div>
+          <div className="text-lg">Loading program details...</div>
             <div className="text-sm text-gray-500 mt-2">Fetching data for program ID: {programId}</div>
           </div>
         </div>
@@ -1059,13 +1542,14 @@ export default function EditCourseProgramDetailsPage() {
       </div>
 
       <Tabs defaultValue="basic" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="basic">Basic Info</TabsTrigger>
           <TabsTrigger value="admission">Admission ({program.admissionSteps?.length || 0})</TabsTrigger>
           <TabsTrigger value="highlights">Highlights ({program.programHighlights?.length || 0})</TabsTrigger>
           <TabsTrigger value="curriculum">Curriculum ({program.curriculum?.length || 0})</TabsTrigger>
           <TabsTrigger value="software">Software ({program.softwareTools?.length || 0})</TabsTrigger>
           <TabsTrigger value="careers">Careers ({program.careerPaths?.length || 0})</TabsTrigger>
+          <TabsTrigger value="fees">Fee Structure</TabsTrigger>
         </TabsList>
 
         <TabsContent value="basic">
@@ -1304,7 +1788,7 @@ export default function EditCourseProgramDetailsPage() {
                       onChange={(e) => setAdmissionStepForm(prev => ({ ...prev, icon: e.target.value }))}
                       placeholder="🎓"
                     />
-                  </div>
+          </div>
                   <div>
                     <Label htmlFor="stepNumber">Step Number</Label>
                     <Input
@@ -1416,7 +1900,7 @@ export default function EditCourseProgramDetailsPage() {
                       onChange={(e) => setHighlightForm(prev => ({ ...prev, icon: e.target.value }))}
                       placeholder="⭐"
                     />
-                  </div>
+          </div>
                   <div>
                     <Label htmlFor="highlightOrder">Display Order</Label>
                     <Input
@@ -1518,7 +2002,7 @@ export default function EditCourseProgramDetailsPage() {
                       onChange={(e) => setCurriculumForm(prev => ({ ...prev, year: e.target.value }))}
                       placeholder="1st Year"
                     />
-                  </div>
+          </div>
                   <div>
                     <Label htmlFor="curriculumOrder">Display Order</Label>
                     <Input
@@ -1717,7 +2201,7 @@ export default function EditCourseProgramDetailsPage() {
                       onChange={(e) => setSoftwareForm(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="AutoCAD"
                     />
-                  </div>
+          </div>
                   <div>
                     <Label htmlFor="softwareOrder">Display Order</Label>
                     <Input
@@ -1821,7 +2305,7 @@ export default function EditCourseProgramDetailsPage() {
                       onChange={(e) => setCareerForm(prev => ({ ...prev, title: e.target.value }))}
                       placeholder="Interior Designer"
                     />
-                  </div>
+          </div>
                   <div>
                     <Label htmlFor="careerOrder">Display Order</Label>
                     <Input
@@ -1846,7 +2330,7 @@ export default function EditCourseProgramDetailsPage() {
                     >
                       Add Role
                     </Button>
-                  </div>
+          </div>
                   
                   {careerForm.roles.map((role, roleIndex) => (
                     <div key={roleIndex} className="flex gap-2">
@@ -1930,6 +2414,463 @@ export default function EditCourseProgramDetailsPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Fee Structure Tab */}
+        <TabsContent value="fees">
+          <div className="space-y-6">
+            {/* Basic Fee Structure */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Fee Structure</CardTitle>
+                <CardDescription>Basic fee information and payment terms</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="totalFee">Total Fee (₹)</Label>
+                    <Input
+                      id="totalFee"
+                      type="number"
+                      value={feeStructureForm.totalFee}
+                      onChange={(e) => setFeeStructureForm(prev => ({ ...prev, totalFee: parseFloat(e.target.value) || 0 }))}
+                      placeholder="500000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="monthlyFee">Monthly Fee (₹)</Label>
+                    <Input
+                      id="monthlyFee"
+                      type="number"
+                      value={feeStructureForm.monthlyFee}
+                      onChange={(e) => setFeeStructureForm(prev => ({ ...prev, monthlyFee: parseFloat(e.target.value) || 0 }))}
+                      placeholder="15000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="yearlyFee">Yearly Fee (₹)</Label>
+                    <Input
+                      id="yearlyFee"
+                      type="number"
+                      value={feeStructureForm.yearlyFee}
+                      onChange={(e) => setFeeStructureForm(prev => ({ ...prev, yearlyFee: parseFloat(e.target.value) || 0 }))}
+                      placeholder="125000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="processingFee">Processing Fee (₹)</Label>
+                    <Input
+                      id="processingFee"
+                      type="number"
+                      value={feeStructureForm.processingFee}
+                      onChange={(e) => setFeeStructureForm(prev => ({ ...prev, processingFee: parseFloat(e.target.value) || 0 }))}
+                      placeholder="5000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="registrationFee">Registration Fee (₹)</Label>
+                    <Input
+                      id="registrationFee"
+                      type="number"
+                      value={feeStructureForm.registrationFee}
+                      onChange={(e) => setFeeStructureForm(prev => ({ ...prev, registrationFee: parseFloat(e.target.value) || 0 }))}
+                      placeholder="10000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="discountPercentage">Discount Percentage (%)</Label>
+                    <Input
+                      id="discountPercentage"
+                      type="number"
+                      value={feeStructureForm.discountPercentage}
+                      onChange={(e) => setFeeStructureForm(prev => ({ ...prev, discountPercentage: parseFloat(e.target.value) || 0 }))}
+                      placeholder="10"
+                      min="0"
+                      max="100"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="paymentTerms">Payment Terms</Label>
+                  <Textarea
+                    id="paymentTerms"
+                    value={feeStructureForm.paymentTerms}
+                    onChange={(e) => setFeeStructureForm(prev => ({ ...prev, paymentTerms: e.target.value }))}
+                    placeholder="50% upfront, 50% in 3 months"
+                    rows={2}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="refundPolicy">Refund Policy</Label>
+                  <Textarea
+                    id="refundPolicy"
+                    value={feeStructureForm.refundPolicy}
+                    onChange={(e) => setFeeStructureForm(prev => ({ ...prev, refundPolicy: e.target.value }))}
+                    placeholder="Full refund within 30 days of enrollment"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="feeStructureActive"
+                    checked={feeStructureForm.isActive}
+                    onCheckedChange={(checked) => setFeeStructureForm(prev => ({ ...prev, isActive: checked as boolean }))}
+                  />
+                  <Label htmlFor="feeStructureActive">Active</Label>
+                </div>
+
+                <Button onClick={handleUpdateFeeStructure}>
+                  Update Fee Structure
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* EMI Options */}
+            <Card>
+              <CardHeader>
+                <CardTitle>EMI Options</CardTitle>
+                <CardDescription>Flexible payment plans for students</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Add New EMI */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h4 className="font-medium">
+                    {editingEmiId ? 'Edit EMI Option' : 'Add New EMI Option'}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="emiMonths">Months</Label>
+                      <Input
+                        id="emiMonths"
+                        type="number"
+                        value={emiForm.months}
+                        onChange={(e) => setEmiForm(prev => ({ ...prev, months: parseInt(e.target.value) || 0 }))}
+                        placeholder="12"
+                        min="1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="emiMonthlyAmount">Monthly Amount (₹)</Label>
+                      <Input
+                        id="emiMonthlyAmount"
+                        type="number"
+                        value={emiForm.monthlyAmount}
+                        onChange={(e) => setEmiForm(prev => ({ ...prev, monthlyAmount: parseFloat(e.target.value) || 0 }))}
+                        placeholder="15000"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="emiTotalAmount">Total Amount (₹)</Label>
+                      <Input
+                        id="emiTotalAmount"
+                        type="number"
+                        value={emiForm.totalAmount}
+                        onChange={(e) => setEmiForm(prev => ({ ...prev, totalAmount: parseFloat(e.target.value) || 0 }))}
+                        placeholder="180000"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="emiProcessingFee">Processing Fee (₹)</Label>
+                      <Input
+                        id="emiProcessingFee"
+                        type="number"
+                        value={emiForm.processingFee}
+                        onChange={(e) => setEmiForm(prev => ({ ...prev, processingFee: parseFloat(e.target.value) || 0 }))}
+                        placeholder="2000"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="emiInterestRate">Interest Rate (%)</Label>
+                      <Input
+                        id="emiInterestRate"
+                        type="number"
+                        value={emiForm.interestRate}
+                        onChange={(e) => setEmiForm(prev => ({ ...prev, interestRate: parseFloat(e.target.value) || 0 }))}
+                        placeholder="12"
+                        step="0.1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="emiOrder">Display Order</Label>
+                      <Input
+                        id="emiOrder"
+                        type="number"
+                        value={emiForm.order}
+                        onChange={(e) => setEmiForm(prev => ({ ...prev, order: parseInt(e.target.value) || 1 }))}
+                        min="1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="emiActive"
+                      checked={emiForm.isActive}
+                      onCheckedChange={(checked) => setEmiForm(prev => ({ ...prev, isActive: checked as boolean }))}
+                    />
+                    <Label htmlFor="emiActive">Active</Label>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      onClick={editingEmiId ? handleUpdateEMI : handleAddEMI}
+                    >
+                      {editingEmiId ? 'Update EMI Option' : 'Add EMI Option'}
+                    </Button>
+                    {editingEmiId && (
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={handleCancelEMIEdit}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Existing EMI Options */}
+                <div className="space-y-4">
+                  <h4 className="font-medium">Existing EMI Options</h4>
+                  {program.feeStructure?.emiOptions && program.feeStructure.emiOptions.length > 0 ? (
+                    <div className="space-y-3">
+                      {program.feeStructure.emiOptions.map((emi, index) => (
+                        <div key={index} className="border rounded-lg p-4 flex justify-between items-center">
+                          <div>
+                            <h5 className="font-medium">{emi.months} Months EMI</h5>
+                            <p className="text-sm text-gray-600">
+                              ₹{emi.monthlyAmount.toLocaleString()}/month | Total: ₹{emi.totalAmount.toLocaleString()}
+                            </p>
+                            {emi.processingFee && emi.processingFee > 0 && (
+                              <p className="text-xs text-gray-500">Processing Fee: ₹{emi.processingFee.toLocaleString()}</p>
+                            )}
+                            {emi.interestRate && emi.interestRate > 0 && (
+                              <p className="text-xs text-gray-500">Interest Rate: {emi.interestRate}%</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant={emi.isActive ? "default" : "secondary"}>
+                                {emi.isActive ? "Active" : "Inactive"}
+                              </Badge>
+                              <span className="text-xs text-gray-500">Order {emi.order}</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => handleEditEMI(index)}>Edit</Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleDeleteEMI(index)}>Delete</Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-center py-8">No EMI options added yet.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Coupon Codes */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Coupon Codes</CardTitle>
+                <CardDescription>Discount codes for promotional campaigns</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Add New Coupon */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h4 className="font-medium">
+                    {editingCouponId ? 'Edit Coupon Code' : 'Add New Coupon Code'}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="couponCode">Coupon Code</Label>
+                      <Input
+                        id="couponCode"
+                        value={couponForm.code}
+                        onChange={(e) => setCouponForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                        placeholder="SAVE20"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="couponDiscountType">Discount Type</Label>
+                      <Select value={couponForm.discountType} onValueChange={(value: 'percentage' | 'fixed') => setCouponForm(prev => ({ ...prev, discountType: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="percentage">Percentage (%)</SelectItem>
+                          <SelectItem value="fixed">Fixed Amount (₹)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="couponDiscountValue">
+                        Discount Value {couponForm.discountType === 'percentage' ? '(%)' : '(₹)'}
+                      </Label>
+                      <Input
+                        id="couponDiscountValue"
+                        type="number"
+                        value={couponForm.discountValue}
+                        onChange={(e) => setCouponForm(prev => ({ ...prev, discountValue: parseFloat(e.target.value) || 0 }))}
+                        placeholder={couponForm.discountType === 'percentage' ? "20" : "5000"}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="couponMinimumAmount">Minimum Amount (₹)</Label>
+                      <Input
+                        id="couponMinimumAmount"
+                        type="number"
+                        value={couponForm.minimumAmount}
+                        onChange={(e) => setCouponForm(prev => ({ ...prev, minimumAmount: parseFloat(e.target.value) || 0 }))}
+                        placeholder="10000"
+                      />
+                    </div>
+                    {couponForm.discountType === 'percentage' && (
+                      <div>
+                        <Label htmlFor="couponMaxDiscount">Maximum Discount (₹)</Label>
+                        <Input
+                          id="couponMaxDiscount"
+                          type="number"
+                          value={couponForm.maximumDiscount}
+                          onChange={(e) => setCouponForm(prev => ({ ...prev, maximumDiscount: parseFloat(e.target.value) || 0 }))}
+                          placeholder="10000"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <Label htmlFor="couponUsageLimit">Usage Limit</Label>
+                      <Input
+                        id="couponUsageLimit"
+                        type="number"
+                        value={couponForm.usageLimit}
+                        onChange={(e) => setCouponForm(prev => ({ ...prev, usageLimit: parseInt(e.target.value) || 0 }))}
+                        placeholder="100"
+                        min="1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="couponValidFrom">Valid From</Label>
+                      <Input
+                        id="couponValidFrom"
+                        type="date"
+                        value={couponForm.validFrom}
+                        onChange={(e) => setCouponForm(prev => ({ ...prev, validFrom: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="couponValidUntil">Valid Until</Label>
+                      <Input
+                        id="couponValidUntil"
+                        type="date"
+                        value={couponForm.validUntil}
+                        onChange={(e) => setCouponForm(prev => ({ ...prev, validUntil: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="couponOrder">Display Order</Label>
+                      <Input
+                        id="couponOrder"
+                        type="number"
+                        value={couponForm.order}
+                        onChange={(e) => setCouponForm(prev => ({ ...prev, order: parseInt(e.target.value) || 1 }))}
+                        min="1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="couponDescription">Description</Label>
+                    <Textarea
+                      id="couponDescription"
+                      value={couponForm.description}
+                      onChange={(e) => setCouponForm(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Back to school discount for new students"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="couponActive"
+                      checked={couponForm.isActive}
+                      onCheckedChange={(checked) => setCouponForm(prev => ({ ...prev, isActive: checked as boolean }))}
+                    />
+                    <Label htmlFor="couponActive">Active</Label>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      onClick={editingCouponId ? handleUpdateCoupon : handleAddCoupon}
+                    >
+                      {editingCouponId ? 'Update Coupon Code' : 'Add Coupon Code'}
+                    </Button>
+                    {editingCouponId && (
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={handleCancelCouponEdit}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Existing Coupon Codes */}
+                <div className="space-y-4">
+                  <h4 className="font-medium">Existing Coupon Codes</h4>
+                  {program.feeStructure?.couponCodes && program.feeStructure.couponCodes.length > 0 ? (
+                    <div className="space-y-3">
+                      {program.feeStructure.couponCodes.map((coupon, index) => (
+                        <div key={index} className="border rounded-lg p-4 flex justify-between items-start">
+                          <div>
+                            <h5 className="font-medium">{coupon.code}</h5>
+                            <p className="text-sm text-gray-600">
+                              {coupon.discountType === 'percentage' 
+                                ? `${coupon.discountValue}% off` 
+                                : `₹${coupon.discountValue.toLocaleString()} off`
+                              }
+                            </p>
+                            {coupon.minimumAmount && coupon.minimumAmount > 0 && (
+                              <p className="text-xs text-gray-500">Min. Amount: ₹{coupon.minimumAmount.toLocaleString()}</p>
+                            )}
+                            {coupon.discountType === 'percentage' && coupon.maximumDiscount && coupon.maximumDiscount > 0 && (
+                              <p className="text-xs text-gray-500">Max. Discount: ₹{coupon.maximumDiscount.toLocaleString()}</p>
+                            )}
+                            <p className="text-xs text-gray-500">
+                              Valid: {new Date(coupon.validFrom).toLocaleDateString()} - {new Date(coupon.validUntil).toLocaleDateString()}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Used: {coupon.usedCount}/{coupon.usageLimit || '∞'}
+                            </p>
+                            {coupon.description && (
+                              <p className="text-xs text-gray-600 mt-1">{coupon.description}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant={coupon.isActive ? "default" : "secondary"}>
+                                {coupon.isActive ? "Active" : "Inactive"}
+                              </Badge>
+                              <span className="text-xs text-gray-500">Order {coupon.order}</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => handleEditCoupon(index)}>Edit</Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleDeleteCoupon(index)}>Delete</Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-center py-8">No coupon codes added yet.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

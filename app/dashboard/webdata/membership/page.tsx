@@ -23,8 +23,7 @@ export default function Page() {
     const fetchMemberships = async () => {
       try {
         const data = await getMemberships()
-
-          setMemberships(data)
+        setMemberships(data as membership[])
       
       } catch (error) {
         console.error('Error fetching memberships:', error)

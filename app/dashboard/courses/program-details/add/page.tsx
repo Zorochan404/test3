@@ -23,7 +23,10 @@ import {
   type CurriculumYear,
   type CurriculumSemester,
   type SoftwareTool,
-  type CareerPath
+  type CareerPath,
+  type FeeStructure,
+  type EMIOption,
+  type CouponCode
 } from '../apis'
 
 export default function AddCourseProgramDetailsPage() {
@@ -92,6 +95,56 @@ export default function AddCourseProgramDetailsPage() {
     { name: 'Revit', logoUrl: '/software logos/pngegg (21).png', description: 'Building information modeling software', order: 4 },
     { name: 'Photoshop', logoUrl: '/software logos/pngegg (24).png', description: 'Image editing software', order: 5 }
   ])
+
+  // Fee Structure
+  const [feeStructure, setFeeStructure] = useState<FeeStructure>({
+    totalFee: 500000,
+    monthlyFee: 15000,
+    yearlyFee: 125000,
+    processingFee: 5000,
+    registrationFee: 10000,
+    discountPercentage: 10,
+    paymentTerms: '50% upfront, 50% in 3 months',
+    refundPolicy: 'Full refund within 30 days of enrollment',
+    isActive: true,
+    order: 1,
+    emiOptions: [
+      {
+        months: 12,
+        monthlyAmount: 15000,
+        totalAmount: 180000,
+        processingFee: 2000,
+        interestRate: 12,
+        isActive: true,
+        order: 1
+      },
+      {
+        months: 24,
+        monthlyAmount: 8000,
+        totalAmount: 192000,
+        processingFee: 3000,
+        interestRate: 15,
+        isActive: true,
+        order: 2
+      }
+    ],
+    couponCodes: [
+      {
+        code: 'SAVE20',
+        discountType: 'percentage',
+        discountValue: 20,
+        minimumAmount: 100000,
+        maximumDiscount: 100000,
+        validFrom: new Date().toISOString(),
+        validUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+        usageLimit: 50,
+        usedCount: 0,
+        isActive: true,
+        description: 'Back to school discount for new students',
+        order: 1
+      }
+    ]
+  })
 
   useEffect(() => {
     loadParentCourses()
@@ -214,6 +267,74 @@ export default function AddCourseProgramDetailsPage() {
     setSoftwareTools(softwareTools.filter((_, i) => i !== index))
   }
 
+  // Fee Structure Helper Functions
+  const updateFeeStructure = (field: keyof FeeStructure, value: any) => {
+    setFeeStructure(prev => ({ ...prev, [field]: value }))
+  }
+
+  const addEMIOption = () => {
+    const newEMI: EMIOption = {
+      months: 12,
+      monthlyAmount: 0,
+      totalAmount: 0,
+      processingFee: 0,
+      interestRate: 0,
+      isActive: true,
+      order: feeStructure.emiOptions.length + 1
+    }
+    setFeeStructure(prev => ({
+      ...prev,
+      emiOptions: [...prev.emiOptions, newEMI]
+    }))
+  }
+
+  const updateEMIOption = (index: number, field: keyof EMIOption, value: any) => {
+    const updated = [...feeStructure.emiOptions]
+    updated[index] = { ...updated[index], [field]: value }
+    setFeeStructure(prev => ({ ...prev, emiOptions: updated }))
+  }
+
+  const removeEMIOption = (index: number) => {
+    setFeeStructure(prev => ({
+      ...prev,
+      emiOptions: prev.emiOptions.filter((_, i) => i !== index)
+    }))
+  }
+
+  const addCouponCode = () => {
+    const newCoupon: CouponCode = {
+      code: '',
+      discountType: 'percentage',
+      discountValue: 0,
+      minimumAmount: 0,
+      maximumDiscount: 0,
+      validFrom: new Date().toISOString(),
+      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      usageLimit: 100,
+      usedCount: 0,
+      isActive: true,
+      description: '',
+      order: feeStructure.couponCodes.length + 1
+    }
+    setFeeStructure(prev => ({
+      ...prev,
+      couponCodes: [...prev.couponCodes, newCoupon]
+    }))
+  }
+
+  const updateCouponCode = (index: number, field: keyof CouponCode, value: any) => {
+    const updated = [...feeStructure.couponCodes]
+    updated[index] = { ...updated[index], [field]: value }
+    setFeeStructure(prev => ({ ...prev, couponCodes: updated }))
+  }
+
+  const removeCouponCode = (index: number) => {
+    setFeeStructure(prev => ({
+      ...prev,
+      couponCodes: prev.couponCodes.filter((_, i) => i !== index)
+    }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -269,6 +390,7 @@ export default function AddCourseProgramDetailsPage() {
         testimonials: [],
         faqs: [],
         feeBenefits: [],
+        feeStructure: feeStructure,
         eligibility: [],
         scheduleOptions: [],
         ctaTitle: formData.ctaTitle.trim(),
@@ -314,12 +436,13 @@ export default function AddCourseProgramDetailsPage() {
       </div>
 
       <Tabs defaultValue="basic" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="basic">Basic Info</TabsTrigger>
           <TabsTrigger value="admission">Admission ({admissionSteps.length})</TabsTrigger>
           <TabsTrigger value="curriculum">Curriculum ({curriculum.length})</TabsTrigger>
           <TabsTrigger value="software">Software ({softwareTools.length})</TabsTrigger>
           <TabsTrigger value="careers">Careers ({careerPaths.length})</TabsTrigger>
+          <TabsTrigger value="fees">Fee Structure</TabsTrigger>
         </TabsList>
 
         <form onSubmit={handleSubmit}>
@@ -488,8 +611,6 @@ export default function AddCourseProgramDetailsPage() {
                 Detailed description of the course content and objectives
               </p>
             </div>
-
-           
           </CardContent>
         </Card>
 
@@ -1000,6 +1121,341 @@ export default function AddCourseProgramDetailsPage() {
                 ))}
                 <Button type="button" variant="outline" onClick={addCareerPath}>
                   Add Career Path
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="fees" className="space-y-6">
+            {/* Basic Fee Structure */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Fee Structure</CardTitle>
+                <CardDescription>Basic fee information and payment terms</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="totalFee">Total Fee (₹)</Label>
+                    <Input
+                      id="totalFee"
+                      type="number"
+                      value={feeStructure.totalFee}
+                      onChange={(e) => updateFeeStructure('totalFee', parseFloat(e.target.value) || 0)}
+                      placeholder="500000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="monthlyFee">Monthly Fee (₹)</Label>
+                    <Input
+                      id="monthlyFee"
+                      type="number"
+                      value={feeStructure.monthlyFee}
+                      onChange={(e) => updateFeeStructure('monthlyFee', parseFloat(e.target.value) || 0)}
+                      placeholder="15000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="yearlyFee">Yearly Fee (₹)</Label>
+                    <Input
+                      id="yearlyFee"
+                      type="number"
+                      value={feeStructure.yearlyFee}
+                      onChange={(e) => updateFeeStructure('yearlyFee', parseFloat(e.target.value) || 0)}
+                      placeholder="125000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="processingFee">Processing Fee (₹)</Label>
+                    <Input
+                      id="processingFee"
+                      type="number"
+                      value={feeStructure.processingFee}
+                      onChange={(e) => updateFeeStructure('processingFee', parseFloat(e.target.value) || 0)}
+                      placeholder="5000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="registrationFee">Registration Fee (₹)</Label>
+                    <Input
+                      id="registrationFee"
+                      type="number"
+                      value={feeStructure.registrationFee}
+                      onChange={(e) => updateFeeStructure('registrationFee', parseFloat(e.target.value) || 0)}
+                      placeholder="10000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="discountPercentage">Discount Percentage (%)</Label>
+                    <Input
+                      id="discountPercentage"
+                      type="number"
+                      value={feeStructure.discountPercentage}
+                      onChange={(e) => updateFeeStructure('discountPercentage', parseFloat(e.target.value) || 0)}
+                      placeholder="10"
+                      min="0"
+                      max="100"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="paymentTerms">Payment Terms</Label>
+                  <Textarea
+                    id="paymentTerms"
+                    value={feeStructure.paymentTerms}
+                    onChange={(e) => updateFeeStructure('paymentTerms', e.target.value)}
+                    placeholder="50% upfront, 50% in 3 months"
+                    rows={2}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="refundPolicy">Refund Policy</Label>
+                  <Textarea
+                    id="refundPolicy"
+                    value={feeStructure.refundPolicy}
+                    onChange={(e) => updateFeeStructure('refundPolicy', e.target.value)}
+                    placeholder="Full refund within 30 days of enrollment"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="feeStructureActive"
+                    checked={feeStructure.isActive}
+                    onCheckedChange={(checked) => updateFeeStructure('isActive', checked as boolean)}
+                  />
+                  <Label htmlFor="feeStructureActive">Active</Label>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* EMI Options */}
+            <Card>
+              <CardHeader>
+                <CardTitle>EMI Options</CardTitle>
+                <CardDescription>Flexible payment plans for students</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {feeStructure.emiOptions.map((emi, index) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="font-medium">{emi.months} Months EMI</h4>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removeEMIOption(index)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <Label>Months</Label>
+                        <Input
+                          type="number"
+                          value={emi.months}
+                          onChange={(e) => updateEMIOption(index, 'months', parseInt(e.target.value) || 0)}
+                          placeholder="12"
+                          min="1"
+                        />
+                      </div>
+                      <div>
+                        <Label>Monthly Amount (₹)</Label>
+                        <Input
+                          type="number"
+                          value={emi.monthlyAmount}
+                          onChange={(e) => updateEMIOption(index, 'monthlyAmount', parseFloat(e.target.value) || 0)}
+                          placeholder="15000"
+                        />
+                      </div>
+                      <div>
+                        <Label>Total Amount (₹)</Label>
+                        <Input
+                          type="number"
+                          value={emi.totalAmount}
+                          onChange={(e) => updateEMIOption(index, 'totalAmount', parseFloat(e.target.value) || 0)}
+                          placeholder="180000"
+                        />
+                      </div>
+                      <div>
+                        <Label>Processing Fee (₹)</Label>
+                        <Input
+                          type="number"
+                          value={emi.processingFee}
+                          onChange={(e) => updateEMIOption(index, 'processingFee', parseFloat(e.target.value) || 0)}
+                          placeholder="2000"
+                        />
+                      </div>
+                      <div>
+                        <Label>Interest Rate (%)</Label>
+                        <Input
+                          type="number"
+                          value={emi.interestRate}
+                          onChange={(e) => updateEMIOption(index, 'interestRate', parseFloat(e.target.value) || 0)}
+                          placeholder="12"
+                          step="0.1"
+                        />
+                      </div>
+                      <div>
+                        <Label>Display Order</Label>
+                        <Input
+                          type="number"
+                          value={emi.order}
+                          onChange={(e) => updateEMIOption(index, 'order', parseInt(e.target.value) || 1)}
+                          min="1"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={emi.isActive}
+                        onCheckedChange={(checked) => updateEMIOption(index, 'isActive', checked as boolean)}
+                      />
+                      <Label>Active</Label>
+                    </div>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addEMIOption}>
+                  Add EMI Option
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Coupon Codes */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Coupon Codes</CardTitle>
+                <CardDescription>Discount codes for promotional campaigns</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {feeStructure.couponCodes.map((coupon, index) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="font-medium">{coupon.code || `Coupon ${index + 1}`}</h4>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removeCouponCode(index)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <Label>Coupon Code</Label>
+                        <Input
+                          value={coupon.code}
+                          onChange={(e) => updateCouponCode(index, 'code', e.target.value.toUpperCase())}
+                          placeholder="SAVE20"
+                        />
+                      </div>
+                      <div>
+                        <Label>Discount Type</Label>
+                        <Select 
+                          value={coupon.discountType} 
+                          onValueChange={(value: 'percentage' | 'fixed') => updateCouponCode(index, 'discountType', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="percentage">Percentage (%)</SelectItem>
+                            <SelectItem value="fixed">Fixed Amount (₹)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>
+                          Discount Value {coupon.discountType === 'percentage' ? '(%)' : '(₹)'}
+                        </Label>
+                        <Input
+                          type="number"
+                          value={coupon.discountValue}
+                          onChange={(e) => updateCouponCode(index, 'discountValue', parseFloat(e.target.value) || 0)}
+                          placeholder={coupon.discountType === 'percentage' ? "20" : "5000"}
+                        />
+                      </div>
+                      <div>
+                        <Label>Minimum Amount (₹)</Label>
+                        <Input
+                          type="number"
+                          value={coupon.minimumAmount}
+                          onChange={(e) => updateCouponCode(index, 'minimumAmount', parseFloat(e.target.value) || 0)}
+                          placeholder="10000"
+                        />
+                      </div>
+                      {coupon.discountType === 'percentage' && (
+                        <div>
+                          <Label>Maximum Discount (₹)</Label>
+                          <Input
+                            type="number"
+                            value={coupon.maximumDiscount}
+                            onChange={(e) => updateCouponCode(index, 'maximumDiscount', parseFloat(e.target.value) || 0)}
+                            placeholder="10000"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <Label>Usage Limit</Label>
+                        <Input
+                          type="number"
+                          value={coupon.usageLimit}
+                          onChange={(e) => updateCouponCode(index, 'usageLimit', parseInt(e.target.value) || 0)}
+                          placeholder="100"
+                          min="1"
+                        />
+                      </div>
+                      <div>
+                        <Label>Valid From</Label>
+                        <Input
+                          type="date"
+                          value={new Date(coupon.validFrom).toISOString().split('T')[0]}
+                          onChange={(e) => updateCouponCode(index, 'validFrom', new Date(e.target.value).toISOString())}
+                        />
+                      </div>
+                      <div>
+                        <Label>Valid Until</Label>
+                        <Input
+                          type="date"
+                          value={new Date(coupon.validUntil).toISOString().split('T')[0]}
+                          onChange={(e) => updateCouponCode(index, 'validUntil', new Date(e.target.value).toISOString())}
+                        />
+                      </div>
+                      <div>
+                        <Label>Display Order</Label>
+                        <Input
+                          type="number"
+                          value={coupon.order}
+                          onChange={(e) => updateCouponCode(index, 'order', parseInt(e.target.value) || 1)}
+                          min="1"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Description</Label>
+                      <Textarea
+                        value={coupon.description}
+                        onChange={(e) => updateCouponCode(index, 'description', e.target.value)}
+                        placeholder="Back to school discount for new students"
+                        rows={2}
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2 mt-4">
+                      <Checkbox
+                        checked={coupon.isActive}
+                        onCheckedChange={(checked) => updateCouponCode(index, 'isActive', checked as boolean)}
+                      />
+                      <Label>Active</Label>
+                    </div>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addCouponCode}>
+                  Add Coupon Code
                 </Button>
               </CardContent>
             </Card>

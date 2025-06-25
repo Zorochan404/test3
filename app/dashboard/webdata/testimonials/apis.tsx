@@ -1,24 +1,35 @@
-import { buildApiUrl, getApiHeaders } from '@/lib/api-config';
+import { apiClient, handleApiResponse } from '@/lib/api-config';
 
 export async function getTestimonials() {
-    const response = await fetch(buildApiUrl('testimonials/gettestimonials'));
-    const Testimonials = await response.json();
-    return Testimonials.data;
+    try {
+        const response = await apiClient.get('/testimonials/gettestimonials');
+        return handleApiResponse(response);
+    } catch (error) {
+        console.error('Error fetching testimonials:', error);
+        throw error;
+    }
 }
 
 export async function getTestimonialById(id: string) {
-    const response = await fetch(buildApiUrl(`testimonials/gettestimonialsbyid/${id}`));
-    const Testimonial = await response.json();
-    return Testimonial.data;
+    try {
+        const response = await apiClient.get(`/testimonials/gettestimonialsbyid/${id}`);
+        return handleApiResponse(response);
+    } catch (error: any) {
+        if (error.status === 404) {
+            return null;
+        }
+        console.error('Error fetching testimonial:', error);
+        throw error;
+    }
 }
 
-export async function deleteTestimonialById(id: string) {
-    const response = await fetch(buildApiUrl(`testimonials/deletetestimonials/${id}`), {
-        method: 'DELETE',
-        headers: getApiHeaders(),
-    });
-    const Testimonial = await response.json();
-    return Testimonial.data;
+export async function deleteTestimonial(id: string) {
+    try {
+        await apiClient.delete(`/testimonials/deletetestimonials/${id}`);
+    } catch (error) {
+        console.error('Error deleting testimonial:', error);
+        throw error;
+    }
 }
 
 export interface TestimonialData {
@@ -27,34 +38,28 @@ export interface TestimonialData {
     feedback: string;
 }
 
-export async function updateTestimonialById(id: string, data: TestimonialData) {
-    const response = await fetch(buildApiUrl(`testimonials/updatetestimonials/${id}`), {
-        method: 'PUT',
-        headers: getApiHeaders(),
-        body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Failed to update Testimonial: ${response.statusText}`);
+export async function updateTestimonial(id: string, data: TestimonialData) {
+    try {
+        const response = await apiClient.put(`/testimonials/updatetestimonials/${id}`, data);
+        return handleApiResponse(response);
+    } catch (error) {
+        console.error('Error updating testimonial:', error);
+        throw error;
     }
-    
-    const Testimonial = await response.json();
-    return Testimonial.data;
 }
 
-export async function addTestimonial(data: TestimonialData) {
-    const response = await fetch(buildApiUrl('testimonials/addtestimonials'), {
-        method: 'POST',
-        headers: getApiHeaders(),
-        body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Failed to update Testimonial: ${response.statusText}`);
+export async function createTestimonial(data: TestimonialData) {
+    try {
+        const response = await apiClient.post('/testimonials/addtestimonials', data);
+        return handleApiResponse(response);
+    } catch (error) {
+        console.error('Error creating testimonial:', error);
+        throw error;
     }
-    
-    const Testimonial = await response.json();
-    return Testimonial.data;
 }
+
+// Alias exports for backward compatibility
+export const updateTestimonialById = updateTestimonial;
+export const deleteTestimonialById = deleteTestimonial;
 
 

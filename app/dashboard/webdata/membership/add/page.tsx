@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { uploadToCloudinary } from '@/utils/cloudinary'
-import { addMembership, type MembershipInput } from '../apis'
+import { createMembership, type MembershipInput } from '../apis'
+import { ErrorDisplay } from '@/components/error-display'
 
 type Membership = {
   name: string;
@@ -19,14 +20,12 @@ type Membership = {
 export default function EditPage() {
   // const params = useParams()
   // const id = params.id as string
-  const [membership, setMembership] = useState<Membership>({
+  const [membership, setMembership] = useState<MembershipInput>({
     name: '',
-    src: '',
-    feedback: ''
+    src: ''
   })
-  // const [error, setError] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<any>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,7 +33,7 @@ export default function EditPage() {
     if (!file) return
 
     try {
-      setUploading(true)
+      setSubmitting(true)
       const imageUrl = await uploadToCloudinary(file)
       setMembership(prev => ({ ...prev, src: imageUrl }))
       toast.success('Image uploaded successfully')
@@ -54,7 +53,7 @@ export default function EditPage() {
         toast.error('An unexpected error occurred. Please try again.')
       }
     } finally {
-      setUploading(false)
+      setSubmitting(false)
       // Reset the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
@@ -65,16 +64,24 @@ export default function EditPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
+    setError(null) // Clear any previous errors
+    
     try {
       const formData: MembershipInput = {
         name: membership.name,
         src: membership.src,
       }
-      await addMembership(formData)
-      alert("Membership details added successfully")
+      await createMembership(formData)
+      toast.success("Membership details added successfully")
+      
+      // Reset form
+      setMembership({
+        name: '',
+        src: ''
+      })
     } catch (error) {
       console.error('Error adding membership:', error)
-      toast.error("Failed to add membership details")
+      setError(error)
     } finally {
       setSubmitting(false)
     }
@@ -87,6 +94,10 @@ export default function EditPage() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Add Membership</h1>
+      
+      {/* Display API errors */}
+      <ErrorDisplay error={error} onClose={() => setError(null)} />
+      
       <form onSubmit={handleSubmit} className="space-y-6 max-w-md">
         <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
@@ -94,46 +105,22 @@ export default function EditPage() {
             id="name"
             value={membership.name}
             onChange={(e) => setMembership(prev => ({ ...prev, name: e.target.value }))}
+            placeholder="Enter membership name"
+            required
           />
         </div>
+        
         <div className="space-y-2">
-          <Label>Image</Label>
-          <div className="flex items-center space-x-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              {uploading ? 'Uploading...' : 'Upload Image'}
-            </Button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImageUpload}
-              accept="image/*"
-              className="hidden"
-            />
-          </div>
-          <p className="text-sm text-muted-foreground">Supported formats: JPG, PNG, GIF. Max size: 5MB</p>
-          {membership.src && (
-            <div className="mt-4">
-              <img
-                src={membership.src}
-                alt="Company logo"
-                className="h-20 w-20 object-contain rounded"
-              />
-            </div>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="feedback">Feedback</Label>
+          <Label htmlFor="src">Logo URL</Label>
           <Input
-            id="feedback"
-            value={membership.feedback}
-            onChange={(e) => setMembership(prev => ({ ...prev, feedback: e.target.value }))}
+            id="src"
+            value={membership.src}
+            onChange={(e) => setMembership(prev => ({ ...prev, src: e.target.value }))}
+            placeholder="Enter logo URL"
+            required
           />
         </div>
+        
         <Button type="submit" disabled={submitting}>
           {submitting ? 'Saving...' : 'Save Changes'}
         </Button>

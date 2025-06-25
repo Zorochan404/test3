@@ -89,18 +89,16 @@ export interface Course {
   updatedAt?: string;
 }
 
+import { apiClient, handleApiResponse } from '@/lib/api-config';
+
 // API Base URL
 const API_BASE_URL = 'https://backend-rakj.onrender.com/api/v1/courses';
 
 // Course CRUD Operations
 export async function getCourses(): Promise<Course[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch courses');
-    }
-    const result = await response.json();
-    return result.data || [];
+    const response = await apiClient.get('/courses');
+    return handleApiResponse<Course[]>(response);
   } catch (error) {
     console.error('Error fetching courses:', error);
     throw error;
@@ -109,16 +107,12 @@ export async function getCourses(): Promise<Course[]> {
 
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/slug/${slug}`);
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      throw new Error('Failed to fetch course');
+    const response = await apiClient.get(`/courses/slug/${slug}`);
+    return handleApiResponse<Course>(response);
+  } catch (error: any) {
+    if (error.status === 404) {
+      return null;
     }
-    const result = await response.json();
-    return result.data;
-  } catch (error) {
     console.error('Error fetching course by slug:', error);
     throw error;
   }
@@ -126,16 +120,12 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
 
 export async function getCourseById(id: string): Promise<Course | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${id}`);
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      throw new Error('Failed to fetch course');
+    const response = await apiClient.get(`/courses/${id}`);
+    return handleApiResponse<Course>(response);
+  } catch (error: any) {
+    if (error.status === 404) {
+      return null;
     }
-    const result = await response.json();
-    return result.data;
-  } catch (error) {
     console.error('Error fetching course by ID:', error);
     throw error;
   }
@@ -143,17 +133,8 @@ export async function getCourseById(id: string): Promise<Course | null> {
 
 export async function createCourse(data: Omit<Course, '_id' | 'createdAt' | 'updatedAt'>): Promise<Course> {
   try {
-    const response = await fetch(`${API_BASE_URL}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to create course');
-    }
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.post('/courses', data);
+    return handleApiResponse<Course>(response);
   } catch (error) {
     console.error('Error creating course:', error);
     throw error;
@@ -162,17 +143,8 @@ export async function createCourse(data: Omit<Course, '_id' | 'createdAt' | 'upd
 
 export async function updateCourse(id: string, data: Partial<Course>): Promise<Course> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to update course');
-    }
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.put(`/courses/${id}`, data);
+    return handleApiResponse<Course>(response);
   } catch (error) {
     console.error('Error updating course:', error);
     throw error;
@@ -181,12 +153,7 @@ export async function updateCourse(id: string, data: Partial<Course>): Promise<C
 
 export async function deleteCourse(id: string): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${id}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete course');
-    }
+    await apiClient.delete(`/courses/${id}`);
   } catch (error) {
     console.error('Error deleting course:', error);
     throw error;
@@ -196,16 +163,8 @@ export async function deleteCourse(id: string): Promise<void> {
 // Course Program Operations
 export async function addCourseProgram(courseId: string, program: Omit<CourseProgram, '_id'>): Promise<CourseProgram> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${courseId}/programs`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(program)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to add course program');
-    }
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.post(`/courses/${courseId}/programs`, program);
+    return handleApiResponse<CourseProgram>(response);
   } catch (error) {
     console.error('Error adding course program:', error);
     throw error;
@@ -214,16 +173,8 @@ export async function addCourseProgram(courseId: string, program: Omit<CoursePro
 
 export async function updateCourseProgram(courseId: string, programId: string, data: Partial<CourseProgram>): Promise<CourseProgram> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${courseId}/programs/${programId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to update course program');
-    }
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.put(`/courses/${courseId}/programs/${programId}`, data);
+    return handleApiResponse<CourseProgram>(response);
   } catch (error) {
     console.error('Error updating course program:', error);
     throw error;
@@ -232,12 +183,7 @@ export async function updateCourseProgram(courseId: string, programId: string, d
 
 export async function deleteCourseProgram(courseId: string, programId: string): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${courseId}/programs/${programId}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete course program');
-    }
+    await apiClient.delete(`/courses/${courseId}/programs/${programId}`);
   } catch (error) {
     console.error('Error deleting course program:', error);
     throw error;
@@ -247,16 +193,8 @@ export async function deleteCourseProgram(courseId: string, programId: string): 
 // Course Feature Operations
 export async function addCourseFeature(courseId: string, feature: Omit<CourseFeature, '_id'>): Promise<CourseFeature> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${courseId}/features`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(feature)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to add course feature');
-    }
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.post(`/courses/${courseId}/features`, feature);
+    return handleApiResponse<CourseFeature>(response);
   } catch (error) {
     console.error('Error adding course feature:', error);
     throw error;
@@ -265,16 +203,8 @@ export async function addCourseFeature(courseId: string, feature: Omit<CourseFea
 
 export async function updateCourseFeature(courseId: string, featureId: string, data: Partial<CourseFeature>): Promise<CourseFeature> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${courseId}/features/${featureId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to update course feature');
-    }
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.put(`/courses/${courseId}/features/${featureId}`, data);
+    return handleApiResponse<CourseFeature>(response);
   } catch (error) {
     console.error('Error updating course feature:', error);
     throw error;
@@ -283,12 +213,7 @@ export async function updateCourseFeature(courseId: string, featureId: string, d
 
 export async function deleteCourseFeature(courseId: string, featureId: string): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${courseId}/features/${featureId}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete course feature');
-    }
+    await apiClient.delete(`/courses/${courseId}/features/${featureId}`);
   } catch (error) {
     console.error('Error deleting course feature:', error);
     throw error;
@@ -298,16 +223,8 @@ export async function deleteCourseFeature(courseId: string, featureId: string): 
 // Testimonial Operations
 export async function addCourseTestimonial(courseId: string, testimonial: Omit<CourseTestimonial, '_id'>): Promise<CourseTestimonial> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${courseId}/testimonials`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(testimonial)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to add course testimonial');
-    }
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.post(`/courses/${courseId}/testimonials`, testimonial);
+    return handleApiResponse<CourseTestimonial>(response);
   } catch (error) {
     console.error('Error adding course testimonial:', error);
     throw error;
@@ -316,16 +233,8 @@ export async function addCourseTestimonial(courseId: string, testimonial: Omit<C
 
 export async function updateCourseTestimonial(courseId: string, testimonialId: string, data: Partial<CourseTestimonial>): Promise<CourseTestimonial> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${courseId}/testimonials/${testimonialId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to update course testimonial');
-    }
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.put(`/courses/${courseId}/testimonials/${testimonialId}`, data);
+    return handleApiResponse<CourseTestimonial>(response);
   } catch (error) {
     console.error('Error updating course testimonial:', error);
     throw error;
@@ -334,12 +243,7 @@ export async function updateCourseTestimonial(courseId: string, testimonialId: s
 
 export async function deleteCourseTestimonial(courseId: string, testimonialId: string): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${courseId}/testimonials/${testimonialId}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete course testimonial');
-    }
+    await apiClient.delete(`/courses/${courseId}/testimonials/${testimonialId}`);
   } catch (error) {
     console.error('Error deleting course testimonial:', error);
     throw error;
@@ -349,16 +253,8 @@ export async function deleteCourseTestimonial(courseId: string, testimonialId: s
 // FAQ Operations
 export async function addCourseFAQ(courseId: string, faq: Omit<CourseFAQ, '_id'>): Promise<CourseFAQ> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${courseId}/faqs`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(faq)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to add course FAQ');
-    }
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.post(`/courses/${courseId}/faqs`, faq);
+    return handleApiResponse<CourseFAQ>(response);
   } catch (error) {
     console.error('Error adding course FAQ:', error);
     throw error;
@@ -367,16 +263,8 @@ export async function addCourseFAQ(courseId: string, faq: Omit<CourseFAQ, '_id'>
 
 export async function updateCourseFAQ(courseId: string, faqId: string, data: Partial<CourseFAQ>): Promise<CourseFAQ> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${courseId}/faqs/${faqId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) {
-      throw new Error('Failed to update course FAQ');
-    }
-    const result = await response.json();
-    return result.data;
+    const response = await apiClient.put(`/courses/${courseId}/faqs/${faqId}`, data);
+    return handleApiResponse<CourseFAQ>(response);
   } catch (error) {
     console.error('Error updating course FAQ:', error);
     throw error;
@@ -385,12 +273,7 @@ export async function updateCourseFAQ(courseId: string, faqId: string, data: Par
 
 export async function deleteCourseFAQ(courseId: string, faqId: string): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/${courseId}/faqs/${faqId}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete course FAQ');
-    }
+    await apiClient.delete(`/courses/${courseId}/faqs/${faqId}`);
   } catch (error) {
     console.error('Error deleting course FAQ:', error);
     throw error;

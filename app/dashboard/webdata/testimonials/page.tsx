@@ -26,7 +26,7 @@ export default function Page() {
       try {
         const data = await getTestimonials()
 
-          setTestimonials(data)
+          setTestimonials(data as testimonial[])
       
       } catch (error) {
         console.error('Error fetching companies:', error)

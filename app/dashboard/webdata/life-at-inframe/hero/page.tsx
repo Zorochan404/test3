@@ -40,7 +40,7 @@ export default function HeroEditPage() {
     const loadHeroSection = async () => {
       try {
         const sections = await getLifeAtInframeSections()
-        const heroSection = sections.find((section: LifeAtInframeSection) => section.sectionType === 'hero')
+        const heroSection = (sections as LifeAtInframeSection[]).find((section: LifeAtInframeSection) => section.sectionType === 'hero')
 
         if (heroSection) {
           setHeroSectionId(heroSection._id || null)
@@ -105,7 +105,7 @@ export default function HeroEditPage() {
       } else {
         // Create new section
         const newSection = await addLifeAtInframeSection(sectionData)
-        setHeroSectionId(newSection._id || null)
+        setHeroSectionId((newSection as LifeAtInframeSection)._id || null)
         toast.success('Hero section created successfully')
       }
     } catch (error) {

@@ -28,7 +28,7 @@ export default function ContactPage() {
       try {
         setLoading(true)
         const data = await getContactSubmissions()
-        setContacts(data || [])
+        setContacts((data as ContactSubmission[]) || [])
       } catch (error) {
         console.error('Error fetching contact submissions:', error)
         setError('Failed to fetch contact submissions')

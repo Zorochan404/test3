@@ -23,7 +23,7 @@ export default function Page() {
     const fetchSessionLogins = async () => {
       try {
         const data = await getSessionLogins()
-        setSessionLogins(data)
+        setSessionLogins(data as SessionLogin[])
       } catch (error) {
         console.error('Error fetching session logins:', error)
         setError('Failed to fetch session logins')

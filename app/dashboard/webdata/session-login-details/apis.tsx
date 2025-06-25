@@ -1,3 +1,5 @@
+import { apiClient, handleApiResponse } from '@/lib/api-config';
+
 export type SessionLoginInput = {
   name: string;
   phoneNumber: string;
@@ -7,58 +9,58 @@ export type SessionLoginInput = {
 };
 
 export async function getSessionLogins() {
-    const response = await fetch('https://backend-rakj.onrender.com/api/v1/session/getsessionlogins');
-    const sessionLogins = await response.json();
-    return sessionLogins.data;
+  try {
+    const response = await apiClient.get('/session/getsessionlogins');
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error fetching session logins:', error);
+    throw error;
+  }
 }
 
 export async function getSessionLoginById(id: string) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/session/getsessionloginbyid/${id}`);
-    const sessionLogin = await response.json();
-    return sessionLogin.data;
-}
-
-export async function deleteSessionLoginById(id: string) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/session/deletesessionlogin/${id}`,{
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-    const sessionLogin = await response.json();
-    return sessionLogin.data;
-}
-
-export async function updateSessionLoginById(id: string, data: SessionLoginInput) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/session/updatesessionlogin/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Failed to update session login: ${response.statusText}`);
+  try {
+    const response = await apiClient.get(`/session/getsessionloginbyid/${id}`);
+    return handleApiResponse(response);
+  } catch (error: any) {
+    if (error.status === 404) {
+      return null;
     }
-    
-    const sessionLogin = await response.json();
-    return sessionLogin.data;
+    console.error('Error fetching session login:', error);
+    throw error;
+  }
 }
 
-export async function addSessionLogin(data: SessionLoginInput) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/session/addsessionlogin`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Failed to add session login: ${response.statusText}`);
-    }
-    
-    const sessionLogin = await response.json();
-    return sessionLogin.data;
+export async function deleteSessionLogin(id: string) {
+  try {
+    await apiClient.delete(`/session/deletesessionlogin/${id}`);
+  } catch (error) {
+    console.error('Error deleting session login:', error);
+    throw error;
+  }
 }
+
+export async function updateSessionLogin(id: string, data: any) {
+  try {
+    const response = await apiClient.put(`/session/updatesessionlogin/${id}`, data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error updating session login:', error);
+    throw error;
+  }
+}
+
+export async function createSessionLogin(data: any) {
+  try {
+    const response = await apiClient.post('/session/addsessionlogin', data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error creating session login:', error);
+    throw error;
+  }
+}
+
+// Alias exports for backward compatibility
+export const updateSessionLoginById = updateSessionLogin;
+export const deleteSessionLoginById = deleteSessionLogin;
+export const addSessionLogin = createSessionLogin;

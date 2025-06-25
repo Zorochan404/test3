@@ -38,7 +38,7 @@ export default function EditPage() {
     const fetchSessionLogin = async () => {
       try {
         const data = await getSessionLoginById(id)
-        setSessionLogin(data)
+        setSessionLogin(data as SessionLogin)
       } catch (error) {
         console.error('Error fetching session login:', error)
         toast.error('Failed to fetch session login details')

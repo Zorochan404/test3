@@ -1,4 +1,4 @@
-import { buildApiUrl, getApiHeaders } from '@/lib/api-config';
+import { buildApiUrl, getApiHeaders, apiClient, handleApiResponse } from '@/lib/api-config';
 
 export async function getCompanies() {
     const response = await fetch(buildApiUrl('logo/getlogo'));
@@ -37,18 +37,13 @@ export async function updateCompanyById(id: string, data: any) {
 }
 
 export async function addCompany(data: any) {
-    const response = await fetch(buildApiUrl('logo/addlogo'), {
-        method: 'POST',
-        headers: getApiHeaders(),
-        body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Failed to update company: ${response.statusText}`);
+    try {
+        const response = await apiClient.post('/logo/addlogo', data);
+        return handleApiResponse(response);
+    } catch (error) {
+        console.error('Error adding company:', error);
+        throw error;
     }
-    
-    const company = await response.json();
-    return company.data;
 }
 
 

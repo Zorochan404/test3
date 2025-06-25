@@ -51,8 +51,8 @@ export default function StudentClubsPage() {
       try {
         setInitialLoading(true)
         const data = await getStudentClubs()
-        setClubs(data || [])
-        setNewClub(prev => ({ ...prev, order: (data?.length || 0) + 1 }))
+        setClubs((data as StudentClub[]) || [])
+        setNewClub(prev => ({ ...prev, order: ((data as StudentClub[])?.length || 0) + 1 }))
       } catch (error) {
         console.error('Error fetching clubs:', error)
         toast.error('Failed to load clubs')
@@ -110,7 +110,7 @@ export default function StudentClubsPage() {
     setLoading(true)
     try {
       const addedClub = await addStudentClub(newClub)
-      setClubs(prev => [...prev, addedClub])
+      setClubs(prev => [...prev, addedClub as StudentClub])
       setNewClub({
         name: '',
         category: 'arts',
@@ -145,7 +145,7 @@ export default function StudentClubsPage() {
     try {
       const updatedClub = await updateStudentClub(editingClub._id, editingClub)
       setClubs(prev => prev.map(club =>
-        club._id === editingClub._id ? updatedClub : club
+        club._id === editingClub._id ? (updatedClub as StudentClub) : club
       ))
       setEditingClub(null)
       toast.success('Club updated successfully')

@@ -1,4 +1,4 @@
-import { API_BASE_URL, getApiHeaders } from '@/lib/api-config'
+import { apiClient, handleApiResponse } from '@/lib/api-config'
 
 export interface Enquiry {
   _id: string
@@ -22,24 +22,8 @@ export interface UpdateEnquiryStatusData {
 // Fetch all enquiries
 export async function getEnquiries(): Promise<Enquiry[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/enquiries`, {
-      headers: getApiHeaders(),
-    })
-    
-    if (!response.ok) {
-      console.error('API Error:', response.status, response.statusText)
-      throw new Error(`Failed to fetch enquiries: ${response.status} ${response.statusText}`)
-    }
-    
-    const result = await response.json()
-    console.log('Enquiries API Response:', result)
-    
-    if (result.success && result.data && Array.isArray(result.data)) {
-      return result.data
-    } else {
-      console.error('Invalid API response format:', result)
-      throw new Error('Invalid API response format')
-    }
+    const response = await apiClient.get('/enquiries')
+    return handleApiResponse<Enquiry[]>(response)
   } catch (error) {
     console.error('Error fetching enquiries:', error)
     throw error
@@ -49,28 +33,12 @@ export async function getEnquiries(): Promise<Enquiry[]> {
 // Fetch enquiry by ID
 export async function getEnquiryById(id: string): Promise<Enquiry | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/enquiries/${id}`, {
-      headers: getApiHeaders(),
-    })
-    
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null
-      }
-      console.error('API Error:', response.status, response.statusText)
-      throw new Error(`Failed to fetch enquiry: ${response.status} ${response.statusText}`)
+    const response = await apiClient.get(`/enquiries/${id}`)
+    return handleApiResponse<Enquiry>(response)
+  } catch (error: any) {
+    if (error.status === 404) {
+      return null
     }
-    
-    const result = await response.json()
-    console.log('Enquiry API Response:', result)
-    
-    if (result.success && result.data) {
-      return result.data
-    } else {
-      console.error('Invalid API response format:', result)
-      throw new Error('Invalid API response format')
-    }
-  } catch (error) {
     console.error('Error fetching enquiry:', error)
     throw error
   }
@@ -79,29 +47,8 @@ export async function getEnquiryById(id: string): Promise<Enquiry | null> {
 // Update enquiry status
 export async function updateEnquiryStatus(id: string, data: UpdateEnquiryStatusData): Promise<Enquiry> {
   try {
-    const response = await fetch(`${API_BASE_URL}/enquiries/${id}/status`, {
-      method: 'PATCH',
-      headers: {
-        ...getApiHeaders(),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    })
-    
-    if (!response.ok) {
-      console.error('API Error:', response.status, response.statusText)
-      throw new Error(`Failed to update enquiry status: ${response.status} ${response.statusText}`)
-    }
-    
-    const result = await response.json()
-    console.log('Update Enquiry Status API Response:', result)
-    
-    if (result.success && result.data) {
-      return result.data
-    } else {
-      console.error('Invalid API response format:', result)
-      throw new Error('Invalid API response format')
-    }
+    const response = await apiClient.patch(`/enquiries/${id}/status`, data)
+    return handleApiResponse<Enquiry>(response)
   } catch (error) {
     console.error('Error updating enquiry status:', error)
     throw error
@@ -111,23 +58,7 @@ export async function updateEnquiryStatus(id: string, data: UpdateEnquiryStatusD
 // Delete enquiry
 export async function deleteEnquiry(id: string): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/enquiries/${id}`, {
-      method: 'DELETE',
-      headers: getApiHeaders(),
-    })
-    
-    if (!response.ok) {
-      console.error('API Error:', response.status, response.statusText)
-      throw new Error(`Failed to delete enquiry: ${response.status} ${response.statusText}`)
-    }
-    
-    const result = await response.json()
-    console.log('Delete Enquiry API Response:', result)
-    
-    if (!result.success) {
-      console.error('Invalid API response format:', result)
-      throw new Error('Invalid API response format')
-    }
+    await apiClient.delete(`/enquiries/${id}`)
   } catch (error) {
     console.error('Error deleting enquiry:', error)
     throw error
@@ -143,24 +74,8 @@ export async function getEnquiryStats(): Promise<{
   notInterested: number
 }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/enquiries/stats`, {
-      headers: getApiHeaders(),
-    })
-    
-    if (!response.ok) {
-      console.error('API Error:', response.status, response.statusText)
-      throw new Error(`Failed to fetch enquiry stats: ${response.status} ${response.statusText}`)
-    }
-    
-    const result = await response.json()
-    console.log('Enquiry Stats API Response:', result)
-    
-    if (result.success && result.data) {
-      return result.data
-    } else {
-      console.error('Invalid API response format:', result)
-      throw new Error('Invalid API response format')
-    }
+    const response = await apiClient.get('/enquiries/stats')
+    return handleApiResponse(response)
   } catch (error) {
     console.error('Error fetching enquiry stats:', error)
     throw error

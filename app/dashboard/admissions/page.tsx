@@ -52,7 +52,7 @@ export default function AdmissionsPage() {
   const fetchAdmissions = async () => {
     try {
       setLoading(true)
-      const data = await getAdmissions()
+      const data = await getAdmissions() as Admission[]
       
       // Validate and transform the data
       const validatedData = data.map(admission => ({

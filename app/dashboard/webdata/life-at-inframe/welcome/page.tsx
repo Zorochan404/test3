@@ -32,7 +32,7 @@ export default function WelcomeEditPage() {
     const loadWelcomeSection = async () => {
       try {
         const sections = await getLifeAtInframeSections()
-        const welcomeSection = sections.find((section: LifeAtInframeSection) => section.sectionType === 'welcome')
+        const welcomeSection = (sections as LifeAtInframeSection[]).find((section: LifeAtInframeSection) => section.sectionType === 'welcome')
 
         if (welcomeSection) {
           setWelcomeSectionId(welcomeSection._id || null)
@@ -79,7 +79,7 @@ export default function WelcomeEditPage() {
       } else {
         // Create new section
         const newSection = await addLifeAtInframeSection(sectionData)
-        setWelcomeSectionId(newSection._id || null)
+        setWelcomeSectionId((newSection as LifeAtInframeSection)._id || null)
         toast.success('Welcome section created successfully')
       }
     } catch (error) {

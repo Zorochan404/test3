@@ -63,7 +63,7 @@ export default function SportsArenaPage() {
       try {
         // Load sports section data
         const sections = await getLifeAtInframeSections()
-        const sportsSection = sections.find((section: LifeAtInframeSection) => section.sectionType === 'sports')
+        const sportsSection = (sections as LifeAtInframeSection[]).find((section: LifeAtInframeSection) => section.sectionType === 'sports')
 
         if (sportsSection) {
           setSportsSectionId(sportsSection._id || null)
@@ -76,7 +76,7 @@ export default function SportsArenaPage() {
 
         // Load sports facilities
         const facilities = await getSportsFacilities()
-        const formattedFacilities = facilities.map((facility: APISportsFacility) => ({
+        const formattedFacilities = (facilities as APISportsFacility[]).map((facility: APISportsFacility) => ({
           id: facility._id || '',
           name: facility.name,
           image: facility.image,
@@ -156,7 +156,7 @@ export default function SportsArenaPage() {
       } else {
         // Create new section
         const newSection = await addLifeAtInframeSection(sectionData)
-        setSportsSectionId(newSection._id || null)
+        setSportsSectionId((newSection as LifeAtInframeSection)._id || null)
         toast.success('Sports arena section created successfully')
       }
     } catch (error) {
@@ -185,10 +185,10 @@ export default function SportsArenaPage() {
       const savedFacility = await addSportsFacility(facilityData)
 
       const facility = {
-        id: savedFacility._id || Date.now().toString(),
-        name: savedFacility.name,
-        image: savedFacility.image,
-        description: savedFacility.description || ''
+        id: (savedFacility as APISportsFacility)._id || Date.now().toString(),
+        name: (savedFacility as APISportsFacility).name,
+        image: (savedFacility as APISportsFacility).image,
+        description: (savedFacility as APISportsFacility).description || ''
       }
 
       setSportsData(prev => ({

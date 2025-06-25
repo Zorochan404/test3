@@ -25,7 +25,7 @@ export default function Page() {
       try {
         const data = await getadvisors()
 
-          setadvisors(data)
+        setadvisors(data as advisor[])
       
       } catch (error) {
         console.error('Error fetching companies:', error)

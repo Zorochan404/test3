@@ -1,3 +1,5 @@
+import { apiClient, handleApiResponse } from '@/lib/api-config';
+
 export type AdvisorInput = {
   name: string;
   src?: string;
@@ -5,60 +7,61 @@ export type AdvisorInput = {
   description: string;
 };
 
-export async function getadvisors() {
-    const response = await fetch('https://backend-rakj.onrender.com/api/v1/advisor/getadvisors');
-    const advisors = await response.json();
-    return advisors.data;
+export async function getAdvisors() {
+  try {
+    const response = await apiClient.get('/advisor/getadvisors');
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error fetching advisors:', error);
+    throw error;
+  }
 }
 
-export async function getadvisorById(id: string) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/advisor/getadvisorsbyid/${id}`);
-    const advisor = await response.json();
-    return advisor.data;
-}
-
-export async function deleteadvisorById(id: string) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/advisor/deleteadvisor/${id}`,{
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-    const advisor = await response.json();
-    return advisor.data;
-}
-
-
-export async function updateadvisorById(id: string, data: AdvisorInput) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/advisor/updateadvisor/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Failed to update advisor: ${response.statusText}`);
+export async function getAdvisorById(id: string) {
+  try {
+    const response = await apiClient.get(`/advisor/getadvisorsbyid/${id}`);
+    return handleApiResponse(response);
+  } catch (error: any) {
+    if (error.status === 404) {
+      return null;
     }
-    
-    const advisor = await response.json();
-    return advisor.data;
+    console.error('Error fetching advisor:', error);
+    throw error;
+  }
 }
 
-export async function addadvisor(data: AdvisorInput) {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/advisor/addadvisor`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Failed to add advisor: ${response.statusText}`);
-    }
-    
-    const advisor = await response.json();
-    return advisor.data;
+export async function deleteAdvisor(id: string) {
+  try {
+    await apiClient.delete(`/advisor/deleteadvisor/${id}`);
+  } catch (error) {
+    console.error('Error deleting advisor:', error);
+    throw error;
+  }
 }
+
+export async function updateAdvisor(id: string, data: any) {
+  try {
+    const response = await apiClient.put(`/advisor/updateadvisor/${id}`, data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error updating advisor:', error);
+    throw error;
+  }
+}
+
+export async function createAdvisor(data: any) {
+  try {
+    const response = await apiClient.post('/advisor/addadvisor', data);
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Error creating advisor:', error);
+    throw error;
+  }
+}
+
+// Alias exports for backward compatibility
+export const getadvisors = getAdvisors;
+export const getadvisorById = getAdvisorById;
+export const updateadvisorById = updateAdvisor;
+export const deleteadvisorById = deleteAdvisor;
+export const addadvisor = createAdvisor;
