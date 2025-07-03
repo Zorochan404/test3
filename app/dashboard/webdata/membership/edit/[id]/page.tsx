@@ -1,12 +1,12 @@
 "use client"
 
 import { useParams, useRouter } from 'next/navigation'
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ImageUpload } from '@/components/ui/image-upload'
 import { toast } from 'sonner'
-import { uploadToCloudinary } from '@/utils/cloudinary'
 import { deleteMembershipById, getMembershipById, MembershipInput, updateMembershipById } from '../../apis'
 
 type Membership = {
@@ -22,10 +22,8 @@ export default function EditPage() {
   const [membership, setMembership] = useState<Membership | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const fetchMembership = async () => {
@@ -42,38 +40,7 @@ export default function EditPage() {
     fetchMembership()
   }, [id])
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
 
-    try {
-      setUploading(true)
-      const imageUrl = await uploadToCloudinary(file)
-      setMembership(prev => prev ? { ...prev, src: imageUrl } : null)
-      toast.success('Image uploaded successfully')
-    } catch (error) {
-      console.error('Error uploading image:', error)
-      if (error instanceof Error) {
-        if (error.message.includes('File must be an image')) {
-          toast.error('Please select an image file')
-        } else if (error.message.includes('File size must be less than 5MB')) {
-          toast.error('Image size must be less than 5MB')
-        } else if (error.message.includes('Missing Cloudinary configuration')) {
-          toast.error('Server configuration error. Please contact support.')
-        } else {
-          toast.error('Failed to upload image. Please try again.')
-        }
-      } else {
-        toast.error('An unexpected error occurred. Please try again.')
-      }
-    } finally {
-      setUploading(false)
-      // Reset the file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -146,34 +113,14 @@ export default function EditPage() {
           />
         </div>
         <div className="space-y-2">
-          <Label>Company Logo</Label>
-          <div className="flex items-center space-x-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              {uploading ? 'Uploading...' : 'Upload Image'}
-            </Button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImageUpload}
-              accept="image/*"
-              className="hidden"
-            />
-          </div>
-          <p className="text-sm text-muted-foreground">Supported formats: JPG, PNG, GIF. Max size: 5MB</p>
-          {membership.src && (
-            <div className="mt-4">
-              <img
-                src={membership.src}
-                alt="Company logo"
-                className="h-20 w-20 object-contain rounded"
-              />
-            </div>
-          )}
+          <ImageUpload
+            label="Membership Logo"
+            value={membership.src || ''}
+            onChange={(url) => setMembership(prev => prev ? { ...prev, src: url } : null)}
+            placeholder="https://example.com/logo.png or upload below"
+            description="Recommended: 200x100 pixels, PNG/JPG format with transparent background. This logo will be displayed for the membership partner."
+            imageClassName="w-32 h-16 object-contain rounded border bg-white"
+          />
         </div>
         <Button type="submit" disabled={submitting}>
           {submitting ? 'Saving...' : 'Save Changes'}

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { ImageUpload } from '@/components/ui/image-upload'
 import { toast } from 'sonner'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
@@ -14,13 +15,15 @@ type WelcomeSection = {
   title: string;
   description: string;
   additionalText: string;
+  welcomeImage: string;
 }
 
 export default function WelcomeEditPage() {
   const [welcomeData, setWelcomeData] = useState<WelcomeSection>({
     title: 'Welcome to Campus Life',
     description: 'Our campus is more than just buildings and classrooms – it\'s a thriving ecosystem where ideas flourish, friendships form, and futures take shape.',
-    additionalText: 'Whether you\'re pursuing academic excellence, exploring new interests through clubs and societies, or developing leadership skills, our campus provides the perfect environment for your growth and success.'
+    additionalText: 'Whether you\'re pursuing academic excellence, exploring new interests through clubs and societies, or developing leadership skills, our campus provides the perfect environment for your growth and success.',
+    welcomeImage: ''
   })
 
   const [loading, setLoading] = useState(false)
@@ -39,7 +42,8 @@ export default function WelcomeEditPage() {
           setWelcomeData({
             title: welcomeSection.title,
             description: welcomeSection.description || '',
-            additionalText: welcomeSection.content || ''
+            additionalText: welcomeSection.content || '',
+            welcomeImage: welcomeSection.images && welcomeSection.images.length > 0 ? welcomeSection.images[0] : ''
           })
         }
       } catch (error) {
@@ -68,6 +72,7 @@ export default function WelcomeEditPage() {
         title: welcomeData.title,
         description: welcomeData.description,
         content: welcomeData.additionalText,
+        images: welcomeData.welcomeImage ? [welcomeData.welcomeImage] : [],
         order: 2,
         isActive: true
       }
@@ -164,6 +169,17 @@ export default function WelcomeEditPage() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <ImageUpload
+                  label="Welcome Image"
+                  value={welcomeData.welcomeImage}
+                  onChange={(url) => setWelcomeData(prev => ({ ...prev, welcomeImage: url }))}
+                  placeholder="https://example.com/welcome-image.jpg or upload below"
+                  description="Recommended: 1200x800 pixels, JPG/PNG format. This image will be displayed in the welcome section."
+                  imageClassName="w-full max-w-md h-48 object-cover rounded border"
+                />
+              </div>
+
               <Button type="submit" disabled={loading} className="w-full">
                 {loading
                   ? (welcomeSectionId ? 'Updating...' : 'Creating...')
@@ -183,6 +199,19 @@ export default function WelcomeEditPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+              {welcomeData.welcomeImage && (
+                <div className="mb-4">
+                  <img
+                    src={welcomeData.welcomeImage}
+                    alt="Welcome section preview"
+                    className="w-full h-48 object-cover rounded-lg"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/placeholder-image.svg';
+                    }}
+                  />
+                </div>
+              )}
               <h2 className="text-2xl font-bold text-gray-900">{welcomeData.title}</h2>
               <p className="text-gray-700 leading-relaxed">{welcomeData.description}</p>
               {welcomeData.additionalText && (

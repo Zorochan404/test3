@@ -1,13 +1,12 @@
 "use client"
 
 // import { useParams } from 'next/navigation'
-import React, {  useState, useRef } from 'react'
-// import { addCompany, getCompanyById, updateCompanyById } from '@/constants/apis'
+import React, {  useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ImageUpload } from '@/components/ui/image-upload'
 import { toast } from 'sonner'
-import { uploadToCloudinary } from '@/utils/cloudinary'
 import { createMembership, type MembershipInput } from '../apis'
 import { ErrorDisplay } from '@/components/error-display'
 
@@ -17,49 +16,15 @@ type Membership = {
   feedback: string;
 }
 
-export default function EditPage() {
-  // const params = useParams()
-  // const id = params.id as string
+export default function AddMembershipPage() {
   const [membership, setMembership] = useState<MembershipInput>({
     name: '',
     src: ''
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<any>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
 
-    try {
-      setSubmitting(true)
-      const imageUrl = await uploadToCloudinary(file)
-      setMembership(prev => ({ ...prev, src: imageUrl }))
-      toast.success('Image uploaded successfully')
-    } catch (error) {
-      console.error('Error uploading image:', error)
-      if (error instanceof Error) {
-        if (error.message.includes('File must be an image')) {
-          toast.error('Please select an image file')
-        } else if (error.message.includes('File size must be less than 5MB')) {
-          toast.error('Image size must be less than 5MB')
-        } else if (error.message.includes('Missing Cloudinary configuration')) {
-          toast.error('Server configuration error. Please contact support.')
-        } else {
-          toast.error('Failed to upload image. Please try again.')
-        }
-      } else {
-        toast.error('An unexpected error occurred. Please try again.')
-      }
-    } finally {
-      setSubmitting(false)
-      // Reset the file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -111,12 +76,13 @@ export default function EditPage() {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="src">Logo URL</Label>
-          <Input
-            id="src"
-            value={membership.src}
-            onChange={(e) => setMembership(prev => ({ ...prev, src: e.target.value }))}
-            placeholder="Enter logo URL"
+          <ImageUpload
+            label="Membership Logo"
+            value={membership.src || ''}
+            onChange={(url) => setMembership(prev => ({ ...prev, src: url }))}
+            placeholder="https://example.com/logo.png or upload below"
+            description="Recommended: 200x100 pixels, PNG/JPG format with transparent background. This logo will be displayed for the membership partner."
+            imageClassName="w-32 h-16 object-contain rounded border bg-white"
             required
           />
         </div>
