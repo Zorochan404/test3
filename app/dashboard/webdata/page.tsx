@@ -19,6 +19,7 @@ const buttons = [
   { "link": "free-courses", "title": "Free Courses" },
   { "link": "careers", "title": "Careers" },
   { "link": "mentor", "title": "Mentor" },
+  { "link": "news", "title": "News & Events" },
 ]
 
 // const toSlug = (str: string) => str.toLowerCase().replace(/\s+/g, "-");

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { getCoursePrograms, deleteCourseProgram, type CourseProgram } from './apis'
+import { getCoursePrograms, deleteCourseProgram, getCourseIdBySlug, type CourseProgram } from './apis'
 
 export default function CourseProgramDetailsPage() {
   const [programs, setPrograms] = useState<CourseProgram[]>([])
@@ -59,8 +59,13 @@ export default function CourseProgramDetailsPage() {
         throw new Error('Program not found')
       }
 
-      // Use the parent course slug as courseId for now
-      await deleteCourseProgram(program.parentCourseSlug, id)
+      // Get the course ID from the course slug
+      const courseId = await getCourseIdBySlug(program.parentCourseSlug)
+      if (!courseId) {
+        throw new Error('Parent course not found')
+      }
+
+      await deleteCourseProgram(courseId, id)
       toast.success('Course program details deleted successfully!')
       await loadPrograms()
     } catch (error) {
