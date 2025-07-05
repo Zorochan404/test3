@@ -186,3 +186,20 @@ export function StudentImageUpload({ value, onChange, disabled = false }: {
     />
   )
 }
+
+export function MentorImageUpload({ value, onChange, disabled = false }: { 
+  value: string; 
+  onChange: (url: string) => void; 
+  disabled?: boolean;
+}) {
+  return (
+    <ImageUpload
+      label="Profile Image"
+      value={value}
+      onChange={onChange}
+      imageClassName="w-32 h-32 object-cover rounded-md border"
+      description="Mentor profile photo. Recommended: Square image, JPG/PNG format"
+      disabled={disabled}
+    />
+  )
+}
