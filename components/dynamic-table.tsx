@@ -1,7 +1,7 @@
 "use client"
  
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 
 // import { Button } from "@/components/ui/button"
 // import {
@@ -35,8 +35,8 @@ type TableHeaderConfig = {
 
 // Define the type for table data
 type CellContent = {
-  type: 'text' | 'image';
-  value: string;
+  type: 'text' | 'image' | 'custom';
+  value: string | React.ReactNode;
 }
 
 type TableData = {
@@ -70,7 +70,7 @@ export default function DynamicTable({ headers, data, url }: DynamicTableProps) 
     const filtered = data.filter(row => 
       Object.entries(row).some(([ value]) => {
         if (isCellContent(value)) {
-          return value.type === 'text' && value.value.toLowerCase().includes(searchQuery.toLowerCase())
+          return value.type === 'text' && typeof value.value === 'string' && value.value.toLowerCase().includes(searchQuery.toLowerCase())
         }
         return String(value).toLowerCase().includes(searchQuery.toLowerCase())
       })
@@ -115,15 +115,21 @@ export default function DynamicTable({ headers, data, url }: DynamicTableProps) 
                 {isCellContent(row[header.key]) ? (
                   (() => {
                     const content = row[header.key] as CellContent;
-                    return content.type === 'image' ? (
-                      <img 
-                        src={content.value} 
-                        alt={header.label} 
-                        className="h-10 w-10 object-cover rounded"
-                      />
-                    ) : (
-                      <span>{content.type === 'text' ? limitWords(content.value) : content.value}</span>
-                    );
+                    if (content.type === 'image') {
+                      return (
+                        <img 
+                          src={content.value as string} 
+                          alt={header.label} 
+                          className="h-10 w-10 object-cover rounded"
+                        />
+                      );
+                    } else if (content.type === 'custom') {
+                      return content.value;
+                    } else {
+                      return (
+                        <span>{limitWords(content.value as string)}</span>
+                      );
+                    }
                   })()
                 ) : row[header.key] !== undefined && row[header.key] !== null ? (
                   <span>{limitWords(String(row[header.key]))}</span>

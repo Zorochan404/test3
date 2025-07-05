@@ -23,7 +23,7 @@ export async function getAdmissions() {
   }
 }
 
-export async function getAdmissionById(id: string) {
+export async function getAdmissionById(id: string): Promise<any> {
   try {
     const response = await apiClient.get(`/admission/${id}`);
     return handleApiResponse(response);

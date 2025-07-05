@@ -105,7 +105,7 @@ export default function AdmissionDetailPage() {
           throw new Error('Invalid admission ID')
         }
         const response = await getAdmissionById(params.id)
-        setAdmission(response.data || response as AdmissionDetail)
+        setAdmission(response as AdmissionDetail)
       } catch (error: unknown) {
         if (error instanceof Error) {
           setError(error.message)
