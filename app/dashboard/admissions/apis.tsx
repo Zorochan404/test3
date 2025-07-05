@@ -5,8 +5,18 @@ import { buildApiUrl, getApiHeaders, apiClient, handleApiResponse } from '@/lib/
 
 export async function getAdmissions() {
   try {
-    const response = await apiClient.get('/admissions/getadmissions');
-    return handleApiResponse(response);
+    const response = await apiClient.get('/admission/all');
+    console.log('Raw API response:', response.data);
+    
+    // Handle the specific response structure from your API
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    } else if (response.data.success === false) {
+      throw new Error(response.data.message || 'API request failed');
+    } else {
+      // If no success field, assume the data is directly the result
+      return response.data;
+    }
   } catch (error) {
     console.error('Error fetching admissions:', error);
     throw error;
@@ -15,7 +25,7 @@ export async function getAdmissions() {
 
 export async function getAdmissionById(id: string) {
   try {
-    const response = await apiClient.get(`/admissions/getadmissionbyid/${id}`);
+    const response = await apiClient.get(`/admission/${id}`);
     return handleApiResponse(response);
   } catch (error: any) {
     if (error.status === 404) {
@@ -26,9 +36,9 @@ export async function getAdmissionById(id: string) {
   }
 }
 
-export async function updateAdmissionStatus(id: string, data: any) {
+export async function updateAdmissionStatus(id: string, status: string) {
   try {
-    const response = await apiClient.patch(`/admissions/updatestatus/${id}`, data);
+    const response = await apiClient.put(`/admission/status/${id}`, { status });
     return handleApiResponse(response);
   } catch (error) {
     console.error('Error updating admission status:', error);

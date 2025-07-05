@@ -6,22 +6,87 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAdmissions, updateAdmissionStatus } from './apis'
+import { generateAdmissionPDF } from '@/utils/pdf-generator'
 import { toast } from 'sonner'
+import { Download } from 'lucide-react'
 
 type Admission = {
   _id: string;
-  studentName: string;
+  userId: string;
+  status: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
-  courseId: string;
-  courseName: string;
+  submittedAt: string;
+  paymentComplete: boolean;
   paymentStatus: string;
   applicationStatus: string;
-  amount: number;
-  razorpayOrderId?: string;
-  razorpayPaymentId?: string;
   createdAt: string;
   updatedAt: string;
+  applicationId: string;
+  studentName: string;
+  aadharCard?: string;
+  aadharNumber?: string;
+  campus?: string;
+  city?: string;
+  dateOfBirth?: string;
+  diplomaInstitution?: string;
+  diplomaPercentage?: string;
+  diplomaStream?: string;
+  diplomaYear?: string;
+  fathersName?: string;
+  fathersOccupation?: string;
+  fathersPhone?: string;
+  fathersQualification?: string;
+  gender?: string;
+  graduationPercentage?: string;
+  graduationUniversity?: string;
+  graduationYear?: string;
+  localGuardianAddress?: string;
+  localGuardianName?: string;
+  localGuardianOccupation?: string;
+  localGuardianPhone?: string;
+  localGuardianRelation?: string;
+  mothersName?: string;
+  mothersOccupation?: string;
+  mothersPhone?: string;
+  mothersQualification?: string;
+  parentsAddress?: string;
+  parentsAnnualIncome?: number;
+  permanentAddress?: string;
+  pincode?: string;
+  programCategory?: string;
+  programName?: string;
+  programType?: string;
+  religion?: string;
+  specialization?: string;
+  state?: string;
+  temporaryAddress?: string;
+  tenthBoard?: string;
+  tenthInstitution?: string;
+  tenthPercentage?: string;
+  tenthStream?: string;
+  tenthYear?: string;
+  twelfthBoard?: string;
+  twelfthInstitution?: string;
+  twelfthPercentage?: string;
+  twelfthStream?: string;
+  twelfthYear?: string;
+  profilePhoto?: string;
+  signature?: string;
+  diplomaMarksheet?: string;
+  tenthMarksheet?: string;
+  twelfthMarksheet?: string;
+  graduationMarksheet?: string;
+  documents?: {
+    randomDocuments: string[];
+    tenthMarksheet?: string;
+    twelfthMarksheet?: string;
+    diplomaMarksheet?: string;
+    graduationMarksheet?: string;
+    signature?: string;
+  };
 }
 
 // Type validation functions
@@ -52,10 +117,15 @@ export default function AdmissionsPage() {
   const fetchAdmissions = async () => {
     try {
       setLoading(true)
-      const data = await getAdmissions() as Admission[]
+      const data = await getAdmissions()
+      
+      console.log('Admissions data:', data)
+      
+      // Ensure data is an array
+      const admissionsArray = Array.isArray(data) ? data : []
       
       // Validate and transform the data
-      const validatedData = data.map(admission => ({
+      const validatedData = admissionsArray.map((admission: Admission) => ({
         ...admission,
         paymentStatus: isValidPaymentStatus(admission.paymentStatus) ? admission.paymentStatus : 'pending',
         applicationStatus: isValidApplicationStatus(admission.applicationStatus) ? admission.applicationStatus : 'pending'
@@ -90,6 +160,19 @@ export default function AdmissionsPage() {
     }
   }
 
+  const handleDownload = async (admission: Admission) => {
+    try {
+      toast.loading('Generating PDF...')
+      await generateAdmissionPDF(admission)
+      toast.dismiss()
+      toast.success('PDF downloaded successfully!')
+    } catch (error) {
+      toast.dismiss()
+      console.error('Error generating PDF:', error)
+      toast.error('Failed to generate PDF')
+    }
+  }
+
   const getStatusBadge = (status: string) => {
     const variants = {
       pending: 'bg-yellow-100 text-yellow-800',
@@ -111,11 +194,11 @@ export default function AdmissionsPage() {
 
   const mappedAdmissions = admissions.map((admission) => ({
     id: admission._id,
-    studentName: admission.studentName,
+    studentName: admission.studentName || `${admission.firstName} ${admission.lastName}`,
     email: admission.email,
     phone: admission.phone,
-    courseName: admission.courseName,
-    amount: `₹${admission.amount}`,
+    courseName: admission.programName || admission.programType || 'N/A',
+    applicationId: admission.applicationId,
     paymentStatus: { 
       type: 'text' as const, 
       value: admission.paymentStatus 
@@ -124,8 +207,23 @@ export default function AdmissionsPage() {
       type: 'text' as const, 
       value: admission.applicationStatus 
     },
-    createdAt: new Date(admission.createdAt).toLocaleDateString(),
-    actions: { type: 'text' as const, value: 'actions' }
+    submittedAt: new Date(admission.submittedAt).toLocaleDateString(),
+    actions: { 
+      type: 'custom' as const, 
+      value: (
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleDownload(admission)}
+            className="flex items-center gap-1"
+          >
+            <Download className="h-3 w-3" />
+            Download
+          </Button>
+        </div>
+      )
+    }
   }))
 
   if (loading) {
@@ -195,11 +293,11 @@ export default function AdmissionsPage() {
           { key: 'studentName', label: 'Student Name' },
           { key: 'email', label: 'Email' },
           { key: 'phone', label: 'Phone' },
-          { key: 'courseName', label: 'Course' },
-          { key: 'amount', label: 'Amount' },
+          { key: 'applicationId', label: 'Application ID' },
+          { key: 'courseName', label: 'Program' },
           { key: 'paymentStatus', label: 'Payment Status' },
           { key: 'applicationStatus', label: 'Application Status' },
-          { key: 'createdAt', label: 'Applied On' },
+          { key: 'submittedAt', label: 'Applied On' },
           { key: 'actions', label: 'Actions', className: 'w-[200px]' }
         ]}
         url="/dashboard/admissions/view"
