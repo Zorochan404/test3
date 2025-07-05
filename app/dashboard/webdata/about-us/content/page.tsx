@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import { uploadToCloudinary } from '@/utils/cloudinary'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
-import { getContentByType, addOrUpdateContent, createContentSection, updateContentSection, type AboutUsContent } from '../apis'
+import { contentSectionsApi, type ContentSection } from '../apis'
 
 type AboutUsContentSection = {
   title: string;
@@ -37,7 +37,7 @@ export default function AboutUsContentEditPage() {
   const loadAboutUsContent = async () => {
     try {
       setInitialLoading(true)
-      const content = await getContentByType('about-us')
+      const content = await contentSectionsApi.getByType('about-us')
       if (content) {
         setAboutUsData({
           title: content.title,
@@ -94,7 +94,7 @@ export default function AboutUsContentEditPage() {
     try {
       setLoading(true)
 
-      const contentData: Omit<AboutUsContent, '_id'> = {
+      const contentData: Omit<ContentSection, '_id' | 'createdAt' | 'updatedAt'> = {
         sectionType: 'about-us',
         title: aboutUsData.title.trim(),
         content: aboutUsData.content.trim(),
@@ -106,9 +106,9 @@ export default function AboutUsContentEditPage() {
       console.log('About Us Content Form Data:', contentData)
 
       if (contentId) {
-        await updateContentSection(contentId, contentData)
+        await contentSectionsApi.update(contentId, contentData)
       } else {
-        await createContentSection(contentData)
+        await contentSectionsApi.create(contentData)
       }
       toast.success('About Us content updated successfully!')
       

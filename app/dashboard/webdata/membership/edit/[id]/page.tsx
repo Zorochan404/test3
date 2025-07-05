@@ -120,7 +120,7 @@ export default function EditPage() {
             placeholder="https://example.com/logo.png or upload below"
             description="Recommended: 200x100 pixels, PNG/JPG format with transparent background. This logo will be displayed for the membership partner."
             imageClassName="w-32 h-16 object-contain rounded border bg-white"
-          />
+              />
         </div>
         <Button type="submit" disabled={submitting}>
           {submitting ? 'Saving...' : 'Save Changes'}

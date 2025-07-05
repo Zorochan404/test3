@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import { uploadToCloudinary } from '@/utils/cloudinary'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
-import { getContentByType, addOrUpdateContent, createContentSection, updateContentSection, type AboutUsContent } from '../apis'
+import { contentSectionsApi, type ContentSection } from '../apis'
 
 type CoreValuesTextSection = {
   title: string;
@@ -37,7 +37,7 @@ export default function CoreValuesTextEditPage() {
   const loadCoreValuesTextContent = async () => {
     try {
       setInitialLoading(true)
-      const content = await getContentByType('core-values-text')
+      const content = await contentSectionsApi.getByType('core-values-text')
       if (content) {
         setCoreValuesTextData({
           title: content.title,
@@ -94,7 +94,7 @@ export default function CoreValuesTextEditPage() {
     try {
       setLoading(true)
 
-      const contentData: Omit<AboutUsContent, '_id'> = {
+      const contentData: Omit<ContentSection, '_id' | 'createdAt' | 'updatedAt'> = {
         sectionType: 'core-values-text',
         title: coreValuesTextData.title.trim(),
         content: coreValuesTextData.content.trim(),
@@ -106,9 +106,9 @@ export default function CoreValuesTextEditPage() {
       console.log('Core Values Text Form Data:', contentData)
 
       if (contentId) {
-        await updateContentSection(contentId, contentData)
+        await contentSectionsApi.update(contentId, contentData)
       } else {
-        await createContentSection(contentData)
+        await contentSectionsApi.create(contentData)
       }
       toast.success('Core Values text section updated successfully!')
       

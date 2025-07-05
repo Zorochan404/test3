@@ -137,7 +137,7 @@ export async function getContentByType(sectionType: string): Promise<AboutUsCont
 
 export async function createContentSection(data: Omit<AboutUsContent, '_id' | 'createdAt' | 'updatedAt'>): Promise<AboutUsContent> {
   try {
-    const response = await apiClient.post('/about-us/content/addcontentsection', data);
+    const response = await apiClient.post('/about-us/content/addorupdatecontent', data);
     return handleApiResponse<AboutUsContent>(response);
   } catch (error) {
     console.error('Error creating content section:', error);
@@ -147,7 +147,7 @@ export async function createContentSection(data: Omit<AboutUsContent, '_id' | 'c
 
 export async function updateContentSection(id: string, data: Partial<AboutUsContent>): Promise<AboutUsContent> {
   try {
-    const response = await apiClient.put(`/about-us/content/updatecontentsection/${id}`, data);
+    const response = await apiClient.put(`/about-us/content/updatecontent/${id}`, data);
     return handleApiResponse<AboutUsContent>(response);
   } catch (error) {
     console.error('Error updating content section:', error);
@@ -163,6 +163,18 @@ export async function deleteContentSection(id: string): Promise<void> {
     throw error;
   }
 }
+
+// Content Sections API object for backward compatibility
+export const contentSectionsApi = {
+  getAll: getContentSections,
+  getByType: getContentByType,
+  create: createContentSection,
+  update: updateContentSection,
+  delete: deleteContentSection
+}
+
+// Type alias for backward compatibility
+export type ContentSection = AboutUsContent
 
 // Statistics API
 export async function getStatistics(): Promise<AboutUsStatistic[]> {
