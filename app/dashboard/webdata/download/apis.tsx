@@ -215,7 +215,7 @@ export async function getCategories(): Promise<DownloadCategory[]> {
 
 export async function deleteCategory(id: string): Promise<void> {
   try {
-    const response = await fetch(`https://backend-rakj.onrender.com/api/v1/download/deletecategory/${id}`, {
+    const response = await fetch(`NEXT_PUBLIC_base_url/download/deletecategory/${id}`, {
       method: 'DELETE'
     });
 

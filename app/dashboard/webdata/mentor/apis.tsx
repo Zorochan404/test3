@@ -1,5 +1,5 @@
 // Mentor API functions
-const BASE_URL = "https://backend-rakj.onrender.com/api/v1/mentor";
+const BASE_URL = "NEXT_PUBLIC_base_url/mentor";
 
 export interface Mentor {
   _id?: string;

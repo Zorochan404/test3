@@ -10,7 +10,7 @@ This project uses environment variables for API configuration. Create a `.env.lo
 
 ```env
 # API Configuration
-NEXT_PUBLIC_API_BASE_URL=https://backend-rakj.onrender.com/api/v1
+NEXT_PUBLIC_API_BASE_URL=NEXT_PUBLIC_base_url
 ```
 
 ### Environment Files

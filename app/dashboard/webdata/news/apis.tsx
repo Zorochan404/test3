@@ -44,7 +44,7 @@ export interface SingleNewsResponse {
 import { apiClient, handleApiResponse } from '@/lib/api-config';
 
 // API Base URL
-const API_BASE_URL = 'https://backend-rakj.onrender.com/api/v1/news';
+const API_BASE_URL = 'NEXT_PUBLIC_base_url/news';
 
 // Get all news with pagination
 export async function getAllNews(page: number = 1, limit: number = 10): Promise<NewsResponse> {

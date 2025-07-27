@@ -92,7 +92,7 @@ export interface Course {
 import { apiClient, handleApiResponse } from '@/lib/api-config';
 
 // API Base URL
-const API_BASE_URL = 'https://backend-rakj.onrender.com/api/v1/courses';
+const API_BASE_URL = 'NEXT_PUBLIC_base_url/courses';
 
 // Course CRUD Operations
 export async function getCourses(): Promise<Course[]> {

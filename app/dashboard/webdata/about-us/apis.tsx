@@ -44,7 +44,7 @@ export interface AboutUsContent {
 import { apiClient, handleApiResponse } from '@/lib/api-config';
 
 // API Base URL
-const API_BASE_URL = 'https://backend-rakj.onrender.com/api/v1/about-us';
+const API_BASE_URL = 'NEXT_PUBLIC_base_url/about-us';
 
 // Hero Images API
 export async function getHeroImages(): Promise<AboutUsHeroImage[]> {
